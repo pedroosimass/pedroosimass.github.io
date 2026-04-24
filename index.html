@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProductFlix — O Portal do Product Owner</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #e50914;
+    --dark: #141414;
+    --card-bg: #1a1a1a;
+    --text: #ffffff;
+    --text-muted: #b3b3b3;
+    --hover-scale: 1.08;
+  }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ─── NAVBAR ─────────────────────────────────────────── */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 4%;
+    height: 68px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+    transition: background 0.3s;
+  }
+  .navbar.scrolled { background: #141414; }
+
+  .navbar-logo {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--red);
+    letter-spacing: -1px;
+    margin-right: 28px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .navbar-links {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    flex: 1;
+  }
+  .navbar-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+  }
+  .navbar-links a:hover, .navbar-links a.active { color: white; }
+
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-left: auto;
+  }
+  .navbar-right .search-icon,
+  .navbar-right .bell-icon { font-size: 1.2rem; cursor: pointer; }
+
+  .navbar-avatar {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #e50914, #b20710);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ─── HERO BANNER ────────────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 100px;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: -20% 0;          /* extra height para o parallax não expor bordas */
+    background: url('https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1600&q=80') center center / cover no-repeat;
+    will-change: transform;
+    transform: translateY(0px);
+  }
+
+  /* overlay separado — fica fixo sobre a imagem que se move */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to right, rgba(8,8,20,0.93) 30%, rgba(8,8,20,0.60) 60%, rgba(8,8,20,0.25) 100%),
+      linear-gradient(to bottom, rgba(8,8,20,0.10) 0%, rgba(8,8,20,0.85) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .hero-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(229,9,20,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(70,130,244,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 60% 80%, rgba(138,43,226,0.05) 0%, transparent 40%);
+    pointer-events: none;
+  }
+  .hero-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 30 L30 0 L60 30 L30 60 Z' fill='none' stroke='rgba(255,255,255,0.025)' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+
+  .hero-badge {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 0 4%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 660px;
+  }
+
+  .hero-rank {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--red);
+    text-transform: uppercase;
+  }
+
+  .hero-title {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+  }
+
+  .hero-title span { color: var(--red); }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+  }
+  .hero-meta .match { color: #46d369; font-weight: 700; }
+  .hero-meta .year, .hero-meta .rating, .hero-meta .seasons {
+    color: var(--text-muted);
+  }
+  .hero-meta .hd-badge {
+    border: 1px solid var(--text-muted);
+    padding: 1px 5px;
+    font-size: 0.7rem;
+    border-radius: 2px;
+    color: var(--text-muted);
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #e0e0e0;
+    max-width: 520px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-play {
+    display: flex; align-items: center; gap: 8px;
+    background: white; color: black;
+    border: none; padding: 10px 28px;
+    border-radius: 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-play:hover { background: rgba(255,255,255,0.8); transform: scale(1.03); }
+
+  .btn-info {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(109,109,110,0.7); color: white;
+    border: none; padding: 10px 24px;
+    border-radius: 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-info:hover { background: rgba(109,109,110,0.5); }
+
+  .hero-age-rating {
+    z-index: 2;
+    position: absolute;
+    bottom: 110px;
+    right: 4%;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem;
+  }
+  .age-badge {
+    border-left: 3px solid white;
+    padding-left: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* ─── ROWS / CAROUSELS ───────────────────────────────── */
+  .rows-section {
+    position: relative;
+    z-index: 1;
+    margin-top: -100px;
+    padding-bottom: 60px;
+  }
+
+  .row {
+    margin-bottom: 2.5vw;
+    padding: 0;
+  }
+
+  .row-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding: 0 4%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+  .row-title:hover { color: #aaa; }
+  .row-title .explore {
+    font-size: 0.75rem;
+    color: #54b9c5;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .row:hover .row-title .explore { opacity: 1; }
+
+  .row-track-wrapper {
+    position: relative;
+    padding: 0 4%;
+  }
+
+  .row-track {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 12px 0 16px;
+  }
+  .row-track::-webkit-scrollbar { display: none; }
+
+  /* arrow buttons */
+  .row-arrow {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 40px; height: 100%;
+    background: rgba(20,20,20,0.6);
+    border: none; color: white;
+    font-size: 1.6rem;
+    cursor: pointer;
+    z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .row-track-wrapper:hover .row-arrow { opacity: 1; }
+  .row-arrow.left { left: 0; border-radius: 0 4px 4px 0; }
+  .row-arrow.right { right: 0; border-radius: 4px 0 0 4px; }
+  .row-arrow:hover { background: rgba(20,20,20,0.9); }
+
+  /* ─── CARD ───────────────────────────────────────────── */
+  .card {
+    flex-shrink: 0;
+    width: 220px;
+    border-radius: 4px;
+    overflow: visible;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease, z-index 0s;
+    z-index: 1;
+  }
+
+  .card:hover {
+    transform: scale(var(--hover-scale));
+    z-index: 100;
+  }
+
+  /* First and last card adjust hover direction */
+  .card:first-child:hover { transform-origin: left center; }
+  .card:last-child:hover { transform-origin: right center; }
+
+  .card-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .card-thumb-inner {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-thumb-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    filter: brightness(0.6);
+  }
+
+  .card-thumb-inner .thumb-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-thumb-icon {
+    font-size: 2rem;
+    display: block;
+  }
+
+  .card-thumb-label {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+  }
+
+  /* Expanded card on hover */
+  .card-expand {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #1a1a1a;
+    border-radius: 0 0 4px 4px;
+    padding: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease 0.15s;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+    z-index: 200;
+  }
+
+  .card:hover .card-expand {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .card-expand-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .card-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.6);
+    background: transparent;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .card-btn:hover { border-color: white; background: rgba(255,255,255,0.1); }
+  .card-btn.play {
+    background: white; color: black; border-color: white;
+    font-size: 1rem;
+  }
+  .card-btn.play:hover { background: #ccc; }
+
+  .card-btn.chevron { margin-left: auto; }
+
+  .card-expand-tags {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.12);
+    color: #ccc;
+  }
+  .tag.match { background: rgba(70,211,105,0.2); color: #46d369; font-weight: 700; }
+  .tag.new { background: rgba(229,9,20,0.3); color: #ff6b6b; font-weight: 700; }
+
+  .card-expand-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .card-expand-desc {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ─── MODAL ──────────────────────────────────────────── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: #181818;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 860px;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.92);
+    transition: transform 0.3s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  .modal-hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/7;
+    display: flex;
+    align-items: flex-end;
+    padding: 30px;
+  }
+
+  .modal-hero-bg {
+    position: absolute;
+    inset: 0;
+  }
+
+  .modal-hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, #181818 0%, transparent 60%), linear-gradient(to right, rgba(0,0,0,0.6), transparent);
+  }
+
+  .modal-hero-content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+  }
+
+  .modal-title {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 14px;
+    line-height: 1.1;
+  }
+
+  .modal-buttons {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(40,40,40,0.9);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: rgba(80,80,80,0.9); }
+
+  .modal-body { padding: 0 30px 40px; }
+
+  .modal-meta {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .modal-meta .match { color: #46d369; font-weight: 700; }
+  .modal-meta .year, .modal-meta .duration { color: var(--text-muted); font-size: 0.9rem; }
+  .modal-meta .hd { border: 1px solid #777; padding: 1px 5px; font-size: 0.7rem; border-radius: 2px; color: #aaa; }
+
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  .modal-desc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #ddd;
+    margin-bottom: 16px;
+  }
+
+  .modal-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 20px 0 10px;
+    color: white;
+  }
+
+  .modal-tools {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .modal-tool-item {
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    border-left: 3px solid var(--red);
+  }
+  .modal-tool-item strong { color: white; display: block; margin-bottom: 2px; }
+  .modal-tool-item span { color: #aaa; }
+
+  .modal-case {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #bbb;
+    border-left: 3px solid #46d369;
+  }
+  .modal-case strong { color: #46d369; display: block; margin-bottom: 6px; font-size: 0.9rem; }
+
+  .modal-sidebar { }
+
+  .modal-sidebar-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .modal-sidebar-label span { color: white; }
+
+  .modal-tag-list {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 14px;
+  }
+  .modal-tag {
+    background: rgba(255,255,255,0.1);
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    color: #ccc;
+  }
+
+  .modal-articles {
+    margin-top: 20px;
+  }
+
+  .article-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 6px;
+    align-items: flex-start;
+  }
+  .article-item:hover { background: rgba(255,255,255,0.05); }
+  .article-item:last-child { border-bottom: none; }
+
+  .article-num {
+    color: var(--text-muted);
+    font-size: 1rem;
+    min-width: 24px;
+    text-align: center;
+    padding-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .article-icon {
+    width: 42px; height: 42px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(255,255,255,0.07);
+  }
+
+  .article-info { flex: 1; min-width: 0; }
+
+  .article-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: white;
+    line-height: 1.3;
+  }
+
+  .article-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .article-readtime {
+    font-size: 0.68rem;
+    color: #777;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .article-badge {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(70, 211, 105, 0.15);
+    color: #46d369;
+    font-weight: 600;
+  }
+
+  /* ─── TOP 10 ROW ────────────────────────────────────── */
+  .top10-card {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  .top10-number {
+    font-size: 7rem;
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 3px rgba(255,255,255,0.6);
+    line-height: 1;
+    margin-right: -18px;
+    z-index: 2;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .top10-card .card { flex-shrink: 0; }
+
+  /* ─── CONTINUE WATCHING ROW ──────────────────────────── */
+  .progress-bar-wrap {
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--red);
+    border-radius: 2px;
+  }
+
+  /* ─── FOOTER ──────────────────────────────────────────── */
+  footer {
+    padding: 40px 4% 60px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 40px;
+  }
+  .footer-links {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: white; }
+  .footer-copy {
+    font-size: 0.75rem;
+    color: #555;
+  }
+  .footer-logo {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--red);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  /* ─── SCROLLBAR STYLE ─────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  /* ─── GENRE TABS ─────────────────────────────────────── */
+  .genre-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 4%;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .genre-tab {
+    padding: 4px 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: transparent;
+    color: white;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .genre-tab:hover, .genre-tab.active {
+    background: white;
+    color: black;
+    border-color: white;
+  }
+
+  /* ─── RESPONSIVE ─────────────────────────────────────── */
+  
+
+  /* ─── ARTICLE READER ─────────────────────────────────── */
+  .article-reader {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: #0e0e0e;
+    overflow-y: auto;
+  }
+  .article-reader.open { display: block; }
+
+  .article-reader-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .ar-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #aaa;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 32px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .ar-back:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+  .ar-section-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 14px;
+  }
+
+  .ar-title {
+    font-size: clamp(1.5rem, 4vw, 2.3rem);
+    font-weight: 800;
+    font-family: Georgia, serif;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .ar-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ar-meta .rt { color: var(--text-muted); font-size: 0.9rem; }
+  .ar-meta .badge {
+    background: rgba(229,9,20,0.15);
+    color: var(--red);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 3px;
+  }
+
+  .ar-body p {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: #ccc;
+    font-family: Georgia, serif;
+    margin-bottom: 26px;
+  }
+  .ar-body p:first-child::first-letter {
+    font-size: 3.4em;
+    font-weight: 900;
+    float: left;
+    line-height: 0.72;
+    margin: 6px 10px 0 0;
+    color: var(--red);
+  }
+
+  .ar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .ar-nav-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #ccc;
+    padding: 10px 22px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .ar-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+  .ar-nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .ar-nav-counter { color: var(--text-muted); font-size: 0.85rem; }
+
+
+  /* ═══════════════════════════════════════════════════════
+     RESPONSIVIDADE
+  ═══════════════════════════════════════════════════════ */
+
+  /* ── Tablet: 768px ───────────────────────────────────── */
+  @media (max-width: 768px) {
+
+    /* Navbar */
+    .navbar { padding: 0 4%; height: 56px; }
+    .navbar-logo { font-size: 1.5rem; margin-right: 16px; }
+    .navbar-links { display: none; }
+    .navbar-right { gap: 12px; }
+
+    /* Hero */
+    .hero { min-height: 75vh; padding: 80px 0 60px; }
+    .hero-badge { max-width: 100%; padding: 0 5%; gap: 12px; }
+    .hero-title { font-size: clamp(1.8rem, 7vw, 2.8rem); }
+    .hero-desc { font-size: 0.9rem; max-width: 100%; }
+    .hero-buttons { flex-wrap: wrap; gap: 8px; }
+    .btn-play { padding: 10px 20px; font-size: 0.95rem; }
+    .btn-info { padding: 10px 18px; font-size: 0.95rem; }
+    .hero-age-rating { display: none; }
+
+    /* Rows */
+    .rows-section { margin-top: -60px; padding: 0 0 40px; }
+    .row { margin-bottom: 28px; }
+    .row-title { font-size: 1rem; padding: 0 4%; margin-bottom: 8px; }
+    .row-track-wrapper { padding: 0; }
+    .row-arrow { display: none; }
+    .row-track { padding: 4px 4% 12px; gap: 6px; }
+
+    /* Cards */
+    .card { width: 140px; }
+    .card-thumb-label { font-size: 0.65rem; }
+    .card-thumb-icon { font-size: 1.5rem; }
+    .card-expand { display: none; }
+
+    /* Top 10 */
+    .top10-number { font-size: 5rem; }
+    .top10-card { width: 140px; }
+
+    /* Section categories */
+    .section-categories { padding: 20px 4% 40px; }
+    .genre-tabs { gap: 6px; flex-wrap: wrap; }
+    .genre-tab { font-size: 0.75rem; padding: 5px 12px; }
+    .categories-grid { gap: 12px; }
+
+    /* Modal */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal {
+      border-radius: 12px 12px 0 0;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-hero { height: 180px; }
+    .modal-hero-title { font-size: 1.4rem; }
+    .modal-actions { flex-wrap: wrap; gap: 8px; }
+    .modal-grid { grid-template-columns: 1fr; }
+    .modal-body { padding: 16px; }
+
+    /* Article reader */
+    .article-reader-inner { padding: 24px 16px 60px; }
+    .ar-nav { flex-direction: column; gap: 12px; text-align: center; }
+    .ar-nav-btn { width: 100%; }
+  }
+
+  /* ── Mobile pequeno: 480px ───────────────────────────── */
+  @media (max-width: 480px) {
+    .navbar-logo { font-size: 1.3rem; }
+
+    .hero { min-height: 70vh; padding: 70px 0 50px; }
+    .hero-title { font-size: clamp(1.5rem, 8vw, 2.2rem); }
+    .hero-meta { flex-wrap: wrap; gap: 6px; font-size: 0.8rem; }
+    .hero-desc { display: none; }
+    .btn-play, .btn-info { padding: 9px 16px; font-size: 0.85rem; }
+
+    .card { width: 120px; }
+    .top10-number { font-size: 4rem; }
+    .top10-card { width: 120px; }
+    .genre-tab { font-size: 0.7rem; padding: 4px 10px; }
+
+    .modal-hero { height: 140px; }
+    .modal-hero-title { font-size: 1.2rem; }
+
+    .ar-title { font-size: 1.4rem; }
+    .ar-body p { font-size: 0.95rem; }
+    .ar-body p:first-child::first-letter { font-size: 2.5em; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ─── NAVBAR ─── -->
+<nav class="navbar" id="navbar">
+  <a class="navbar-logo" href="#">ProductFlix</a>
+  <ul class="navbar-links">
+    <li><a href="#" class="active">Início</a></li>
+    <li><a href="#section-categories" onclick="document.getElementById('section-categories').scrollIntoView({behavior:'smooth'});return false;">Navegar por Assunto</a></li>
+  </ul>
+  <div class="navbar-right">
+    <span class="search-icon">🔍</span>
+    <span class="bell-icon">🔔</span>
+    <div class="navbar-avatar">PO</div>
+  </div>
+</nav>
+
+<!-- ─── HERO BANNER ─── -->
+<section class="hero">
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-badge">
+    <div class="hero-rank">📖 ProductFlix Original · #1 em Produto Hoje</div>
+    <h1 class="hero-title">Discovery:<br><span>A Arte de Fazer<br>as Perguntas Certas</span></h1>
+    <div class="hero-meta">
+      <span class="match">98% relevante</span>
+      <span class="year">2024</span>
+      <span class="hd-badge">HD</span>
+      <span class="seasons">5 artigos · 58 min leitura</span>
+      <span class="rating">· Todos POs</span>
+    </div>
+    <p class="hero-desc">
+      Antes de construir qualquer coisa, descubra se vale a pena construir. Times fortes economizam meses aqui. Uma série sobre como entender problemas reais antes de sair codando — com casos reais do Airbnb, Google e Netflix.
+    </p>
+    <div class="hero-buttons">
+      <button class="btn-play" onclick="openModal('discovery')">📖 Ler Artigo</button>
+      <button class="btn-info" onclick="openModal('discovery')">ℹ Mais Informações</button>
+    </div>
+  </div>
+  <div class="hero-age-rating">
+    <div class="age-badge">PO+</div>
+  </div>
+</section>
+
+<!-- ─── ROWS SECTION ─── -->
+<section class="rows-section">
+
+  <!-- Continuar Assistindo -->
+  <div class="row">
+    <h2 class="row-title">Continuar de onde parou <span class="explore" onclick="event.stopPropagation();document.getElementById('section-categories').scrollIntoView({behavior:'smooth'})" style="cursor:pointer" title="Ver todos os assuntos">Explorar tudo ›</span></h2>
+    <div class="row-track-wrapper">
+      <button class="row-arrow left" onclick="scrollRow(this,-1)">‹</button>
+      <div class="row-track" id="row-continue">
+        <!-- Cards com progress bar -->
+        <div class="card" onclick="openModal('fundamentos')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(20,30,48,0.70),rgba(20,30,48,0.70)), url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content">
+                <span class="card-thumb-icon">🧩</span>
+                <span class="card-thumb-label">Fundamentos do Product Owner</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:72%"></div></div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('fundamentos')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'fundamentos')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'fundamentos')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('fundamentos')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags">
+              <span class="tag match">97% relevante</span>
+              <span class="tag new">Essencial</span>
+              <span class="tag">Iniciante</span>
+            </div>
+            <div class="card-expand-title">Fundamentos do PO</div>
+            <div class="card-expand-desc">Entenda exatamente o papel do PO e por que alguns aceleram negócios enquanto outros apenas organizam cards.</div>
+          </div>
+        </div>
+        <div class="card" onclick="openModal('backlog')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(45,27,105,0.70),rgba(45,27,105,0.70)), url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content">
+                <span class="card-thumb-icon">📚</span>
+                <span class="card-thumb-label">Backlog</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:45%"></div></div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('backlog')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'backlog')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'backlog')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('backlog')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags">
+              <span class="tag match">95% relevante</span>
+              <span class="tag">Priorização</span>
+            </div>
+            <div class="card-expand-title">Backlog</div>
+            <div class="card-expand-desc">Um backlog forte reduz caos, acelera decisões e ajuda o time a construir o que realmente importa.</div>
+          </div>
+        </div>
+        <div class="card" onclick="openModal('metricas')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,90,10,0.72),rgba(160,90,10,0.72)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content">
+                <span class="card-thumb-icon">📈</span>
+                <span class="card-thumb-label">Métricas</span>
+              </div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:20%"></div></div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('metricas')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'metricas')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'metricas')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('metricas')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags">
+              <span class="tag match">99% relevante</span>
+              <span class="tag">Dados</span>
+            </div>
+            <div class="card-expand-title">Métricas</div>
+            <div class="card-expand-desc">Bons POs não defendem opinião. Defendem decisões baseadas em evidência.</div>
+          </div>
+        </div>
+      </div>
+      <button class="row-arrow right" onclick="scrollRow(this,1)">›</button>
+    </div>
+  </div>
+
+  <!-- Top 10 Brasil -->
+  <div class="row">
+    <h2 class="row-title">Top 10 no Brasil Hoje <span class="explore" onclick="event.stopPropagation();document.getElementById('section-categories').scrollIntoView({behavior:'smooth'})" style="cursor:pointer" title="Ver todos os assuntos">Explorar tudo ›</span></h2>
+    <div class="row-track-wrapper">
+      <button class="row-arrow left" onclick="scrollRow(this,-1)">‹</button>
+      <div class="row-track" id="row-top10">
+        <div class="top10-card"><span class="top10-number">1</span><div class="card" onclick="openModal('discovery')"><div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(20,30,48,0.70),rgba(20,30,48,0.70)), url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🔍</span><span class="card-thumb-label">Discovery</span></div></div></div><div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('discovery')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'discovery')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'discovery')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('discovery')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag match">98% relevante</span><span class="tag new">#1 Hoje</span></div><div class="card-expand-title">Discovery</div><div class="card-expand-desc">Antes de construir qualquer coisa, descubra se vale a pena construir.</div></div></div></div>
+        <div class="top10-card"><span class="top10-number">2</span><div class="card" onclick="openModal('ia')"><div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(15,12,41,0.78),rgba(15,12,41,0.78)), url('https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🤖</span><span class="card-thumb-label">IA para PO</span></div></div></div><div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('ia')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'ia')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'ia')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('ia')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag match">96% relevante</span><span class="tag new">Tendência</span></div><div class="card-expand-title">IA para PO</div><div class="card-expand-desc">O PO que domina IA trabalha mais rápido, pensa melhor e entrega acima da média.</div></div></div></div>
+        <div class="top10-card"><span class="top10-number">3</span><div class="card" onclick="openModal('carreira')"><div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,100,10,0.72),rgba(160,100,10,0.72)), url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🚀</span><span class="card-thumb-label">Carreira</span></div></div></div><div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('carreira')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'carreira')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'carreira')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('carreira')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag match">94% relevante</span></div><div class="card-expand-title">Carreira</div><div class="card-expand-desc">POs valorizados não crescem por acaso. Crescem por impacto, consistência e visão.</div></div></div></div>
+        <div class="top10-card"><span class="top10-number">4</span><div class="card" onclick="openModal('situacoes')"><div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,20,20,0.72),rgba(160,20,20,0.72)), url('https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🧨</span><span class="card-thumb-label">Situações Reais</span></div></div></div><div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('situacoes')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'situacoes')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'situacoes')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('situacoes')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag match">97% relevante</span></div><div class="card-expand-title">Situações Reais</div><div class="card-expand-desc">Cenários comuns do mundo real para POs agirem com maturidade, clareza e estratégia.</div></div></div></div>
+        <div class="top10-card"><span class="top10-number">5</span><div class="card" onclick="openModal('stakeholders')"><div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(19,78,94,0.70),rgba(19,78,94,0.70)), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">👥</span><span class="card-thumb-label">Stakeholders</span></div></div></div><div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('stakeholders')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'stakeholders')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'stakeholders')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('stakeholders')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag match">93% relevante</span></div><div class="card-expand-title">Stakeholders</div><div class="card-expand-desc">Produto não cresce sozinho. Saber lidar com stakeholders é parte central do trabalho.</div></div></div></div>
+      </div>
+      <button class="row-arrow right" onclick="scrollRow(this,1)">›</button>
+    </div>
+  </div>
+
+  <!-- ProductFlix Originals -->
+  <div class="row">
+    <h2 class="row-title">ProductFlix Originals <span class="explore" onclick="event.stopPropagation();document.getElementById('section-categories').scrollIntoView({behavior:'smooth'})" style="cursor:pointer" title="Ver todos os assuntos">Explorar tudo ›</span></h2>
+    <div class="row-track-wrapper">
+      <button class="row-arrow left" onclick="scrollRow(this,-1)">‹</button>
+      <div class="row-track" id="row-originals">
+
+        <div class="card" onclick="openModal('fundamentos')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(15,52,96,0.70),rgba(15,52,96,0.70)), url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">🧩</span><span class="card-thumb-label">Fundamentos do Product Owner</span>
+<div class="card" onclick="openModal('primeiros_passos')">
+<div class="card-thumb">
+<div class="card-thumb-inner" style="background-image: linear-gradient(rgba(13,27,42,0.75),rgba(13,27,42,0.75)); background-size: cover;">
+<div class="thumb-content"><span class="card-thumb-icon">🌱</span><span class="card-thumb-label">Primeiros Passos em Produto</span></div>
+</div>
+</div>
+<div class="card-expand">
+<div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('primeiros_passos')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'primeiros_passos')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'primeiros_passos')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('primeiros_passos')" title="Mais detalhes">⌄</button></div>
+<div class="card-expand-tags"><span class="tag match">100% relevante</span><span class="tag new">Novo</span><span class="tag">Iniciante</span></div>
+<div class="card-expand-title">Primeiros Passos em Produto</div>
+<div class="card-expand-desc">O guia que ninguém te deu quando você entrou. Do zero ao primeiro impacto real.</div>
+</div>
+</div>
+</div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('fundamentos')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'fundamentos')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'fundamentos')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('fundamentos')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">97%</span><span class="tag">S01</span><span class="tag">Seção 01</span></div>
+            <div class="card-expand-title">Fundamentos do PO</div>
+            <div class="card-expand-desc">O papel real do PO: conectar negócio, usuário e tecnologia para entregar valor real.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('cargos')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(55,59,68,0.68),rgba(55,59,68,0.68)), url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">⚔️</span><span class="card-thumb-label">Diferença entre Cargos</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('cargos')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'cargos')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'cargos')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('cargos')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">92%</span><span class="tag">Seção 02</span></div>
+            <div class="card-expand-title">PO vs PM vs SM vs UX</div>
+            <div class="card-expand-desc">Clareza de papéis acelera produto. Quando cada função entende sua missão, o time para de disputar espaço.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('scrum')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(31,64,55,0.70),rgba(31,64,55,0.70)), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">⚡</span><span class="card-thumb-label">Scrum e Ágil</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('scrum')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'scrum')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'scrum')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('scrum')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">91%</span><span class="tag">Seção 03</span></div>
+            <div class="card-expand-title">Scrum e Ágil</div>
+            <div class="card-expand-desc">Framework ajuda execução. Mas sem direção, prioridade e valor, nenhuma cerimônia resolve.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('delivery')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(180,110,10,0.72),rgba(180,110,10,0.72)), url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">🚀</span><span class="card-thumb-label">Delivery</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('delivery')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'delivery')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'delivery')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('delivery')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">93%</span><span class="tag">Seção 06</span></div>
+            <div class="card-expand-title">Delivery</div>
+            <div class="card-expand-desc">Ideia boa sem execução vira nada. Delivery é transformar prioridade em resultado real.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('templates')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(122,35,206,0.70),rgba(122,35,206,0.70)), url('https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">📋</span><span class="card-thumb-label">Templates</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('templates')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'templates')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'templates')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('templates')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">90%</span><span class="tag new">Prontos p/ uso</span></div>
+            <div class="card-expand-title">Templates Prontos</div>
+            <div class="card-expand-desc">6 modelos prontos: User Story, Discovery, Roadmap, Priorização, Stakeholders e Métricas.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('ferramentas')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(0,82,141,0.70),rgba(0,82,141,0.70)), url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">🧰</span><span class="card-thumb-label">Ferramentas</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('ferramentas')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'ferramentas')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'ferramentas')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('ferramentas')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">89%</span><span class="tag">Seção 09</span></div>
+            <div class="card-expand-title">Ferramentas do PO</div>
+            <div class="card-expand-desc">O melhor PO usa ferramentas como alavanca. Nunca como muleta.</div>
+          </div>
+        </div>
+
+        <div class="card" onclick="openModal('certificacoes')">
+          <div class="card-thumb">
+            <div class="card-thumb-inner" style="background-image: linear-gradient(rgba(140,100,0,0.72),rgba(140,100,0,0.72)), url('https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=800&q=80'); background-size: cover; background-position: center;">
+              <div class="thumb-content"><span class="card-thumb-icon">🏆</span><span class="card-thumb-label">Certificações</span></div>
+            </div>
+          </div>
+          <div class="card-expand">
+            <div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('certificacoes')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'certificacoes')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'certificacoes')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('certificacoes')" title="Mais detalhes">⏄</button></div>
+            <div class="card-expand-tags"><span class="tag match">88%</span><span class="tag">Seção 14</span></div>
+            <div class="card-expand-title">Certificações</div>
+            <div class="card-expand-desc">Certificação abre a porta. Quem permanece e cresce é quem gera resultado real depois que entra.</div>
+          </div>
+        </div>
+
+      </div>
+      <button class="row-arrow right" onclick="scrollRow(this,1)">›</button>
+    </div>
+  </div>
+
+  <!-- Categorias / Genre Tabs -->
+  <div id="section-categories" style="margin-bottom:10px;scroll-margin-top:80px">
+    <h2 class="row-title" style="margin-bottom:12px">Navegar por Assunto</h2>
+    <div class="genre-tabs">
+      <button class="genre-tab active" onclick="filterCategory('all',this)">Todas</button>
+      <button class="genre-tab" onclick="filterCategory('execucao',this)">Execução</button>
+      <button class="genre-tab" onclick="filterCategory('estrategia',this)">Estratégia</button>
+      <button class="genre-tab" onclick="filterCategory('pessoas',this)">Pessoas</button>
+      <button class="genre-tab" onclick="filterCategory('dados',this)">Dados & Métricas</button>
+      <button class="genre-tab" onclick="filterCategory('tools',this)">Ferramentas & IA</button>
+      <button class="genre-tab" onclick="filterCategory('carreira',this)">Carreira</button>
+    </div>
+    <div class="row-track-wrapper">
+      <button class="row-arrow left" onclick="scrollRow(this,-1)">‹</button>
+      <div class="row-track" id="row-category">
+
+        <div class="card" data-cat="estrategia" onclick="openModal('fundamentos')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(15,52,96,0.70),rgba(15,52,96,0.70)), url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🧩</span><span class="card-thumb-label">Fundamentos</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Estratégia</span></div><div class="card-expand-title">Fundamentos</div><div class="card-expand-desc">O papel real do PO no produto moderno.</div></div>
+        </div>
+
+        <div class="card" data-cat="pessoas" onclick="openModal('cargos')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(55,59,68,0.68),rgba(55,59,68,0.68)), url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">⚔️</span><span class="card-thumb-label">Diferença entre Cargos</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Pessoas</span></div><div class="card-expand-title">PO vs PM vs SM</div><div class="card-expand-desc">Limites e responsabilidades de cada papel.</div></div>
+        </div>
+
+        <div class="card" data-cat="execucao" onclick="openModal('scrum')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(31,64,55,0.70),rgba(31,64,55,0.70)), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">⚡</span><span class="card-thumb-label">Scrum e Ágil</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Execução</span></div><div class="card-expand-title">Scrum e Ágil</div><div class="card-expand-desc">Cerimônias, sprints e agilidade real.</div></div>
+        </div>
+
+        <div class="card" data-cat="execucao" onclick="openModal('backlog')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(45,27,105,0.70),rgba(45,27,105,0.70)), url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">📚</span><span class="card-thumb-label">Backlog</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Execução</span></div><div class="card-expand-title">Backlog</div><div class="card-expand-desc">Prioridade real, não o que grita mais alto.</div></div>
+        </div>
+
+        <div class="card" data-cat="estrategia" onclick="openModal('discovery')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(20,30,48,0.70),rgba(20,30,48,0.70)), url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🔍</span><span class="card-thumb-label">Discovery</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Estratégia</span></div><div class="card-expand-title">Discovery</div><div class="card-expand-desc">Entenda o problema antes de construir a solução.</div></div>
+        </div>
+
+        <div class="card" data-cat="execucao" onclick="openModal('delivery')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(180,110,10,0.72),rgba(180,110,10,0.72)), url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🚀</span><span class="card-thumb-label">Delivery</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Execução</span></div><div class="card-expand-title">Delivery</div><div class="card-expand-desc">Transformar prioridade em resultado real.</div></div>
+        </div>
+
+        <div class="card" data-cat="dados" onclick="openModal('metricas')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,90,10,0.72),rgba(160,90,10,0.72)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">📈</span><span class="card-thumb-label">Métricas</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Dados</span></div><div class="card-expand-title">Métricas</div><div class="card-expand-desc">Decisões baseadas em evidência, não opinião.</div></div>
+        </div>
+
+        <div class="card" data-cat="pessoas" onclick="openModal('stakeholders')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(19,78,94,0.70),rgba(19,78,94,0.70)), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">👥</span><span class="card-thumb-label">Stakeholders</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Pessoas</span></div><div class="card-expand-title">Stakeholders</div><div class="card-expand-desc">Criar confiança e manter todos na mesma direção.</div></div>
+        </div>
+
+        <div class="card" data-cat="tools" onclick="openModal('ferramentas')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(0,82,141,0.70),rgba(0,82,141,0.70)), url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🧰</span><span class="card-thumb-label">Ferramentas</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Tools</span></div><div class="card-expand-title">Ferramentas</div><div class="card-expand-desc">Stack certa para POs de alto impacto.</div></div>
+        </div>
+
+        <div class="card" data-cat="execucao" onclick="openModal('templates')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(122,35,206,0.70),rgba(122,35,206,0.70)), url('https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">📋</span><span class="card-thumb-label">Templates</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Execução</span></div><div class="card-expand-title">Templates</div><div class="card-expand-desc">6 modelos prontos para usar hoje.</div></div>
+        </div>
+
+        <div class="card" data-cat="pessoas" onclick="openModal('situacoes')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,20,20,0.72),rgba(160,20,20,0.72)), url('https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🧨</span><span class="card-thumb-label">Situações Reais</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Pessoas</span></div><div class="card-expand-title">Situações Reais</div><div class="card-expand-desc">Cenários difíceis do dia a dia de um PO.</div></div>
+        </div>
+
+        <div class="card" data-cat="tools" onclick="openModal('ia')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(15,12,41,0.78),rgba(15,12,41,0.78)), url('https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🤖</span><span class="card-thumb-label">IA para PO</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">IA</span><span class="tag new">Hot</span></div><div class="card-expand-title">IA para PO</div><div class="card-expand-desc">ChatGPT, Claude, Perplexity — o copiloto do PO moderno.</div></div>
+        </div>
+
+        <div class="card" data-cat="carreira" onclick="openModal('carreira')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,100,10,0.72),rgba(160,100,10,0.72)), url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">💼</span><span class="card-thumb-label">Carreira</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Carreira</span></div><div class="card-expand-title">Carreira</div><div class="card-expand-desc">De PO Júnior a Sênior — o caminho com impacto.</div></div>
+        </div>
+
+        <div class="card" data-cat="carreira" onclick="openModal('certificacoes')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(140,100,0,0.72),rgba(140,100,0,0.72)), url('https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🏆</span><span class="card-thumb-label">Certificações</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Carreira</span></div><div class="card-expand-title">Certificações</div><div class="card-expand-desc">PSPO I, CSPO, Product School — qual vale a pena?</div></div>
+        </div>
+
+        <div class="card" data-cat="dados" onclick="openModal('glossario')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(30,32,34,0.76),rgba(30,32,34,0.76)), url('https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">📖</span><span class="card-thumb-label">Glossário</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play">📖</button><button class="card-btn">+</button><button class="card-btn chevron">⌄</button></div><div class="card-expand-tags"><span class="tag">Referência</span></div><div class="card-expand-title">Glossário 400+</div><div class="card-expand-desc">Os 443 termos que todo PO precisa dominar.</div></div>
+        </div>
+
+      </div>
+      <button class="row-arrow right" onclick="scrollRow(this,1)">›</button>
+    </div>
+  </div>
+
+  <!-- Cases de Sucesso -->
+  <div class="row">
+    <h2 class="row-title">Cases de Sucesso Globais <span class="explore" onclick="event.stopPropagation();document.getElementById('section-categories').scrollIntoView({behavior:'smooth'})" style="cursor:pointer" title="Ver todos os assuntos">Explorar tudo ›</span></h2>
+    <div class="row-track-wrapper">
+      <button class="row-arrow left" onclick="scrollRow(this,-1)">‹</button>
+      <div class="row-track" id="row-cases">
+        <div class="card" onclick="openModal('discovery')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(20,30,48,0.70),rgba(20,30,48,0.70)), url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🏨</span><span class="card-thumb-label">Airbnb Discovery</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('discovery')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'discovery')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'discovery')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('discovery')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag new">Case Real</span><span class="tag">Discovery</span></div><div class="card-expand-title">Airbnb: Fotos que salvaram o negócio</div><div class="card-expand-desc">Como US$200/semana viraram bilhões com discovery manual e uma câmera alugada.</div></div>
+        </div>
+        <div class="card" onclick="openModal('metricas')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(160,90,10,0.72),rgba(160,90,10,0.72)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🎵</span><span class="card-thumb-label">Duolingo NSM</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('metricas')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'metricas')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'metricas')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('metricas')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag new">Case Real</span><span class="tag">Métricas</span></div><div class="card-expand-title">Duolingo: North Star que 16x o DAU</div><div class="card-expand-desc">De 5M para 80M de usuários ativos diários com uma única métrica como norte.</div></div>
+        </div>
+        <div class="card" onclick="openModal('backlog')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(45,27,105,0.70),rgba(45,27,105,0.70)), url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">💬</span><span class="card-thumb-label">Intercom RICE</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('backlog')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'backlog')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'backlog')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('backlog')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag new">Case Real</span><span class="tag">Backlog</span></div><div class="card-expand-title">Intercom: RICE que revolucionou priorização</div><div class="card-expand-desc">Como reduzir backlog em 60% e triplicar impacto das features lançadas.</div></div>
+        </div>
+        <div class="card" onclick="openModal('stakeholders')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(19,78,94,0.70),rgba(19,78,94,0.70)), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">🏦</span><span class="card-thumb-label">Nubank Stakeholders</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('stakeholders')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'stakeholders')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'stakeholders')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('stakeholders')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag new">Case Real</span><span class="tag">Stakeholders</span></div><div class="card-expand-title">Nubank: Transparência radical com stakeholders</div><div class="card-expand-desc">Como o Nubank chegou a 90M de clientes alinhando stakeholders com dados, não opiniões.</div></div>
+        </div>
+        <div class="card" onclick="openModal('ia')">
+          <div class="card-thumb"><div class="card-thumb-inner" style="background-image: linear-gradient(rgba(15,12,41,0.78),rgba(15,12,41,0.78)), url('https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80'); background-size: cover; background-position: center;"><div class="thumb-content"><span class="card-thumb-icon">💳</span><span class="card-thumb-label">Klarna IA</span></div></div></div>
+          <div class="card-expand"><div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('ia')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'ia')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'ia')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('ia')" title="Mais detalhes">⏄</button></div><div class="card-expand-tags"><span class="tag new">Case Real</span><span class="tag">IA</span></div><div class="card-expand-title">Klarna: IA que substituiu 700 agentes</div><div class="card-expand-desc">Como a fintech usou IA no processo de produto e redefiniu o papel do PO.</div></div>
+        </div>
+      </div>
+      <button class="row-arrow right" onclick="scrollRow(this,1)">›</button>
+    </div>
+  </div>
+
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <span class="footer-logo">ProductFlix</span>
+  <div class="footer-links">
+    <a href="#" onclick="showToast('Conteúdo disponível em Português Brasileiro');return false;">Áudio e legendas</a>
+    <a href="https://me-ajuda-po.vercel.app" target="_blank">Central de Ajuda</a>
+    <a href="#" onclick="showToast('Em breve: compartilhe o ProductFlix com colegas POs!');return false;">Cartão de presente</a>
+    <a href="#section-categories" onclick="document.getElementById('section-categories').scrollIntoView({behavior:'smooth'});return false;">Mídia</a>
+    <a href="https://me-ajuda-po.vercel.app" target="_blank">Relações com investidores</a>
+    <a href="#" onclick="showToast('Quer contribuir com conteúdo? Acesse me-ajuda-po.vercel.app');return false;">Empregos</a>
+    <a href="#" onclick="showToast('Conteúdo educacional — uso pessoal e profissional liberado.');return false;">Termos de uso</a>
+    <a href="#" onclick="showToast('Nenhum dado é coletado neste portal.');return false;">Privacidade</a>
+    <a href="#" onclick="showToast('ProductFlix é um portal educacional independente.');return false;">Avisos legais</a>
+    <a href="#" onclick="showToast('Sem cookies — experiência 100% local.');return false;">Preferências de cookies</a>
+  </div>
+  <p class="footer-copy">© 2025 ProductFlix · Portal de artigos para Product Owners · Baseado em me-ajuda-po.vercel.app</p>
+</footer>
+
+<!-- ─── MODAL ─── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-hero">
+      <div class="modal-hero-bg" id="modal-hero-bg"></div>
+      <div class="modal-hero-gradient"></div>
+      <div class="modal-hero-content">
+        <h2 class="modal-title" id="modal-title"></h2>
+        <div class="modal-buttons">
+          <button class="btn-play" id="modal-read-btn" onclick="openFirstArticle()">📖 Ler Artigo</button>
+          <button class="btn-info" id="modal-wishlist-btn" onclick="toggleModalWishlist()" style="background:rgba(109,109,110,0.5)">+ Minha Lista</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta">
+        <span class="match" id="modal-match"></span>
+        <span class="year" id="modal-year">2024</span>
+        <span class="hd">HD</span>
+        <span class="duration" id="modal-duration"></span>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <p class="modal-desc" id="modal-desc"></p>
+          <div class="modal-section-title">🛠️ Ferramentas & Métodos do Mercado</div>
+          <div class="modal-tools" id="modal-tools"></div>
+          <div class="modal-section-title">📄 Artigos desta Seção</div>
+          <div class="modal-articles" id="modal-episodes"></div>
+        </div>
+        <div class="modal-sidebar">
+          <div class="modal-section-title">🏆 Case de Sucesso</div>
+          <div class="modal-case" id="modal-case"></div>
+          <br>
+          <div class="modal-sidebar-label">Categorias: <span id="modal-cats"></span></div>
+          <div class="modal-tag-list" id="modal-tags"></div>
+          <div class="modal-sidebar-label" style="margin-top:8px">Mindset de Elite:</div>
+          <div style="font-size:0.8rem;color:#aaa;font-style:italic;margin-top:4px" id="modal-mindset"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card" onclick="openModal('primeiros_passos')">
+<div class="card-thumb">
+<div class="card-thumb-inner" style="background-image: linear-gradient(rgba(13,27,42,0.75),rgba(13,27,42,0.75)); background-size: cover;">
+<div class="thumb-content"><span class="card-thumb-icon">🌱</span><span class="card-thumb-label">Primeiros Passos em Produto</span></div>
+</div>
+</div>
+<div class="card-expand">
+<div class="card-expand-actions"><button class="card-btn play" onclick="event.stopPropagation();openModal('primeiros_passos')" title="Ler artigos">📖</button><button class="card-btn" onclick="event.stopPropagation();toggleWishlist(this,'primeiros_passos')" title="Adicionar à minha lista">+</button><button class="card-btn" onclick="event.stopPropagation();markUseful(this,'primeiros_passos')" title="Marcar como útil">👍</button><button class="card-btn chevron" onclick="event.stopPropagation();openModal('primeiros_passos')" title="Mais detalhes">⌄</button></div>
+<div class="card-expand-tags"><span class="tag match">100% relevante</span><span class="tag new">Novo</span><span class="tag">Iniciante</span></div>
+<div class="card-expand-title">Primeiros Passos em Produto</div>
+<div class="card-expand-desc">O guia que ninguém te deu quando você entrou. Do zero ao primeiro impacto real.</div>
+</div>
+</div>
+
+
+<script>
+const TOOL_URLS = {
+  'Jobs To Be Done (JTBD)': 'https://jtbd.info',
+  'Continuous Discovery Habits': 'https://www.producttalk.org',
+  'Continuous Discovery Habits (Teresa Torres)': 'https://www.producttalk.org',
+  'Opportunity Solution Tree (OST)': 'https://www.producttalk.org/opportunity-solution-tree',
+  'RACI Matrix': 'https://www.projectmanager.com/blog/raci-chart-definition',
+  'Shape Up (Basecamp)': 'https://basecamp.com/shapeup',
+  'Shape Up Glossary (Basecamp)': 'https://basecamp.com/shapeup',
+  'Dual-Track Agile': 'https://www.svpg.com/dual-track-agile',
+  'Jira Software': 'https://www.atlassian.com/software/jira',
+  'SAFe (Scaled Agile Framework)': 'https://scaledagileframework.com',
+  'OKRs aplicados a Sprints': 'https://www.whatmatters.com',
+  'RICE Score': 'https://www.intercom.com/blog/rice-simple-prioritization-for-product-managers',
+  'MoSCoW Method': 'https://www.productplan.com/glossary/moscow-prioritization',
+  'Story Mapping (Jeff Patton)': 'https://www.jpattonassociates.com/user-story-mapping',
+  'Design Sprint (Google Ventures)': 'https://designsprintkit.withgoogle.com',
+  'Lean Startup / Build-Measure-Learn': 'http://theleanstartup.com',
+  'CI/CD (Continuous Integration/Delivery)': 'https://about.gitlab.com/topics/ci-cd',
+  'Feature Flags': 'https://launchdarkly.com/blog/what-are-feature-flags',
+  'DORA Metrics': 'https://dora.dev',
+  'North Star Metric Framework': 'https://amplitude.com/blog/north-star-metric',
+  'Mixpanel / Amplitude': 'https://amplitude.com',
+  'Pirate Metrics (AARRR)': 'https://www.productplan.com/glossary/aarrr-framework',
+  'Stakeholder Map (Poder × Interesse)': 'https://www.mindtools.com/pages/article/newPPM_07.htm',
+  'Roadmap Now/Next/Later': 'https://www.prodpad.com/blog/now-next-later-roadmap',
+  'Executive One Pager': 'https://www.productplan.com/learn/product-one-pager',
+  'Linear': 'https://linear.app',
+  'Notion': 'https://notion.so',
+  'Figma': 'https://figma.com',
+  'PRD (Product Requirements Document)': 'https://www.atlassian.com/agile/product-management/requirements',
+  'Amazon PR/FAQ': 'https://www.productplan.com/glossary/amazon-press-release',
+  'Notion Templates para Produto': 'https://notion.so/templates/category/product-management',
+  'Pre-Mortem (Gary Klein)': 'https://hbr.org/2007/09/performing-a-project-premortem',
+  'Five Whys (Toyota)': 'https://www.mindtools.com/pages/article/newTMC_5W.htm',
+  'SBI Feedback (Center for Creative Leadership)': 'https://www.ccl.org/articles/leading-effectively-articles/hr-pipeline-a-managers-guide-feedback-employee',
+  'ChatGPT / GPT-4o (OpenAI)': 'https://chat.openai.com',
+  'GitHub Copilot / Cursor AI': 'https://cursor.sh',
+  'Prompt Engineering': 'https://www.promptingguide.ai',
+  'Lenny\'s Newsletter': 'https://www.lennysnewsletter.com',
+  'Lenny\'s Newsletter / Podcast': 'https://www.lennysnewsletter.com',
+  'Portfolio de Produto': 'https://www.productfolio.com',
+  'Individual Development Plan (IDP)': 'https://www.shrm.org/resourcesandtools/tools-and-samples/how-to-guides/pages/developanindividualdevelopmentplan.aspx',
+  'Scrum.org (PSPO I, II, III)': 'https://www.scrum.org/professional-scrum-product-owner',
+  'Product School': 'https://productschool.com',
+  'Product School — Free Courses': 'https://productschool.com/free-product-management-resources',
+  'Reforge': 'https://www.reforge.com',
+  'Product Glossary by Amplitude': 'https://amplitude.com/blog/product-management-glossary',
+  'Reforge Artifact Library': 'https://www.reforge.com/artifacts',
+};
+
+const CASE_URLS = {
+  'Amazon': 'https://www.google.com/search?q=Amazon+Working+Backwards+PR+FAQ+product',
+  'Spotify': 'https://www.google.com/search?q=Spotify+Engineering+Model+squads+product',
+  'Airbnb': 'https://www.google.com/search?q=Airbnb+product+discovery+photos+case+study',
+  'Slack': 'https://www.google.com/search?q=Slack+product+strategy+launch+case+study',
+  'Netflix': 'https://www.google.com/search?q=Netflix+product+culture+Reed+Hastings',
+  'Google': 'https://www.google.com/search?q=Google+Design+Sprint+product+case+study',
+  'Nubank': 'https://www.google.com/search?q=Nubank+product+culture+case+study',
+  'Duolingo': 'https://www.google.com/search?q=Duolingo+North+Star+metric+DAU+case+study',
+  'Intercom': 'https://www.google.com/search?q=Intercom+RICE+prioritization+case+study',
+  'Basecamp': 'https://www.google.com/search?q=Basecamp+Shape+Up+product+framework',
+  'Notion': 'https://www.google.com/search?q=Notion+growth+product+strategy+case+study',
+  'Linear': 'https://www.google.com/search?q=Linear+app+product+case+study',
+  'Figma': 'https://www.google.com/search?q=Figma+product+growth+case+study',
+  'Toyota': 'https://www.google.com/search?q=Toyota+Five+Whys+lean+case+study',
+};
+
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const data = {
+  fundamentos: {
+    title: "Fundamentos do Product Owner",
+    match: "97% relevante",
+    duration: "Seção 01 · 5 artigos · ~54 min leitura",
+    bg: "linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)",
+    icon: "🧩",
+    desc: "Entenda exatamente o papel do PO e por que alguns aceleram negócios enquanto outros apenas organizam cards. O PO forte não gerencia tarefas — ele remove ruído, define direção e garante que o time construa o que realmente move resultado.",
+    tools: [
+      { name: "Jobs To Be Done (JTBD)", desc: "Framework de Clayton Christensen — entenda o 'trabalho' que o cliente contrata o produto para fazer. Usado no Intercom e Basecamp." },
+      { name: "Continuous Discovery Habits", desc: "Teresa Torres propõe entrevistas semanais com usuários como rotina. Tornou-se o método de discovery mais influente da última década." },
+      { name: "Opportunity Solution Tree (OST)", desc: "Mapa visual que liga outcome de negócio a oportunidades e hipóteses. Evita o PO de virar uma 'feature factory'." }
+    ],
+    case: { company: "Amazon — Working Backwards", text: "Jeff Bezos criou o PR/FAQ: antes de qualquer dev, o PO escreve o press release do produto pronto. Kindle, AWS e Prime nasceram desse processo. Resultado: clareza extrema antes de qualquer linha de código." },
+    tags: ["Estratégia", "Iniciante", "Papel do PO", "Mindset"],
+    mindset: "O PO forte não gerencia tarefas. Ele remove ruído, define direção e garante que o time construa o que realmente move resultado.",
+    episodes: [
+      { num: 1, icon: "🧩", title: "O que faz um Product Owner?", desc: "Conecta negócio, usuário e tecnologia para entregar valor real.", duration: "12 min" },
+      { num: 2, icon: "🚫", title: "O que NÃO faz um PO", desc: "Não é gerente do squad, não aceita tudo, não apaga incêndio.", duration: "8 min" },
+      { num: 3, icon: "🎯", title: "Priorizar o que gera valor", desc: "PO não escolhe o que grita mais alto — escolhe o que move negócio.", duration: "15 min" },
+      { num: 4, icon: "🧠", title: "Entender problema antes da solução", desc: "Pedido pronto costuma esconder a dor real.", duration: "10 min" },
+      { num: 5, icon: "🕒", title: "Como é o dia de um PO forte", desc: "Daily, métricas, backlog, stakeholders, usuários, entregas.", duration: "9 min" }
+    ]
+  },
+  cargos: {
+    title: "Diferença entre Cargos",
+    match: "92% relevante",
+    duration: "Seção 02 · 4 artigos · ~38 min leitura",
+    bg: "linear-gradient(135deg,#373b44,#4286f4)",
+    icon: "⚔️",
+    desc: "Entenda responsabilidades, limites e como cada papel contribui para um produto forte. PO, PM, Scrum Master, Tech Lead e UX — quando cada função entende sua missão, o time para de disputar espaço e começa a entregar valor.",
+    tools: [
+      { name: "RACI Matrix", desc: "Define quem é Responsável, Aprovador, Consultado e Informado. Amplamente adotado para clarificar papéis em projetos complexos." },
+      { name: "Shape Up (Basecamp)", desc: "Elimina o Scrum Master e redistribui responsabilidades entre Shaper (estratégia) e Builder (execução autônoma). Alternativa ao Scrum." },
+      { name: "Dual-Track Agile", desc: "Separa explicitamente Discovery (PO + UX validando) de Delivery (dev executando). Define como PO e design colaboram sem bloquear." }
+    ],
+    case: { company: "Spotify — O modelo de squads global", text: "O Spotify Engineering Model de 2012 tornou-se referência mundial. PO = 'o quê e por quê', SM = processo, Chapter Lead = pessoas. Com 600+ squads, o Spotify escalou globalmente sem perder agilidade. ING Bank, Zalando e dezenas de fintechs replicaram o modelo." },
+    tags: ["Papéis", "Organização", "Times"],
+    mindset: "Clareza de papéis acelera produto. Quando cada função entende sua missão, o time para de disputar espaço e começa a entregar valor.",
+    episodes: [
+      { num: 1, icon: "⚔️", title: "PO vs PM", desc: "PO domina execução; PM olha estratégia e mercado.", duration: "11 min" },
+      { num: 2, icon: "🔄", title: "PO vs Scrum Master", desc: "PO decide o que gera mais valor. SM melhora fluxo.", duration: "9 min" },
+      { num: 3, icon: "⚙️", title: "PO vs Tech Lead", desc: "PO define problema e impacto. Tech Lead define como construir.", duration: "10 min" },
+      { num: 4, icon: "🎨", title: "PO vs UX", desc: "PO prioriza valor e resultado. UX desenha experiências.", duration: "8 min" }
+    ]
+  },
+  scrum: {
+    title: "Scrum e Ágil",
+    match: "91% relevante",
+    duration: "Seção 03 · 4 artigos · ~40 min leitura",
+    bg: "linear-gradient(135deg,#1f4037,#99f2c8)",
+    icon: "⚡",
+    desc: "Entenda Scrum de forma prática, sem teoria vazia. O que realmente importa no dia a dia. Scrum não salva produto ruim — framework ajuda execução, mas sem direção, prioridade e valor, nenhuma cerimônia resolve.",
+    tools: [
+      { name: "Jira Software", desc: "Plataforma dominante para gestão de sprints e backlog. Usada por 65.000+ empresas incluindo Airbnb, Twitter e NASA." },
+      { name: "SAFe (Scaled Agile Framework)", desc: "Para escalar Scrum em grandes organizações. Adotado por Philips, LEGO e Boeing com Program Increments de 8-12 semanas." },
+      { name: "OKRs aplicados a Sprints", desc: "Popularizado pelo Google — conectar Sprint Goals diretamente aos OKRs trimestrais. Elimina sprints sem direção." }
+    ],
+    case: { company: "ING Bank — Transformação ágil referência global", text: "Em 2015, o ING Bank reorganizou 3.500 colaboradores em squads autônomos com Scrum. Resultado: lançamento de produtos caiu de meses para semanas, engajamento subiu 19%. Tornou-se referência de transformação digital no setor financeiro mundial." },
+    tags: ["Execução", "Sprints", "Cerimônias", "Framework"],
+    mindset: "Scrum não salva produto ruim. Framework ajuda execução. Mas sem direção, prioridade e valor, nenhuma cerimônia resolve.",
+    episodes: [
+      { num: 1, icon: "🎯", title: "O que é Sprint?", desc: "Ciclo curto onde o time entrega algo valioso e utilizável.", duration: "10 min" },
+      { num: 2, icon: "📌", title: "Planning", desc: "Definir objetivo da sprint e o que será puxado.", duration: "12 min" },
+      { num: 3, icon: "⚡", title: "Daily eficiente", desc: "15 minutos que alinham sem cansar.", duration: "7 min" },
+      { num: 4, icon: "🔄", title: "Retrospectiva que funciona", desc: "Falar sem executar melhoria gera descrédito.", duration: "11 min" }
+    ]
+  },
+  backlog: {
+    title: "Backlog",
+    match: "95% relevante",
+    duration: "Seção 04 · 3 artigos · ~34 min leitura",
+    bg: "linear-gradient(135deg,#2d1b69,#11998e,#38ef7d)",
+    icon: "📚",
+    desc: "Um backlog forte reduz caos, acelera decisões e ajuda o time a construir o que realmente importa. Backlog não é cemitério de ideias — é uma ferramenta viva de decisão. Se tudo entra e nada sai, ele perde valor.",
+    tools: [
+      { name: "RICE Score", desc: "Framework do Intercom: Reach × Impact × Confidence ÷ Effort. Justifica prioridades de forma objetiva para stakeholders." },
+      { name: "MoSCoW Method", desc: "Must Have, Should Have, Could Have, Won't Have. Amplamente usado em prazos fixos para negociar escopo com clareza." },
+      { name: "Story Mapping (Jeff Patton)", desc: "Organiza backlog em duas dimensões: jornada do usuário × nível de detalhe. Visualiza MVPs e releases colaborativamente." }
+    ],
+    case: { company: "Intercom — RICE que revolucionou priorização", text: "O Intercom criou o RICE ao perceber que priorizava pelo volume de pedidos, não pelo impacto real. Após adotar o framework: backlog ativo reduzido em 60% e features com 3x mais impacto. O RICE foi adotado por Google, HubSpot e Dropbox." },
+    tags: ["Priorização", "Execução", "Gestão", "RICE"],
+    mindset: "Backlog não é cemitério de ideias. É uma ferramenta viva de decisão. Se tudo entra e nada sai, ele perde valor.",
+    episodes: [
+      { num: 1, icon: "🎯", title: "O que é e para que serve", desc: "Lista priorizada de problemas, oportunidades e entregas futuras.", duration: "9 min" },
+      { num: 2, icon: "📈", title: "Como priorizar com RICE", desc: "Reach, Impact, Confidence, Effort — o framework do Intercom.", duration: "14 min" },
+      { num: 3, icon: "🚨", title: "Erros que destroem um backlog", desc: "Tudo prioridade máxima, itens vagos, feature sem problema.", duration: "11 min" }
+    ]
+  },
+  discovery: {
+    title: "Discovery: A Arte de Fazer as Perguntas Certas",
+    match: "98% relevante",
+    duration: "Seção 05 · 5 artigos · ~60 min leitura",
+    bg: "linear-gradient(135deg,#141e30,#243b55)",
+    icon: "🔍",
+    desc: "Antes de construir qualquer coisa, descubra se vale a pena construir. Times fortes economizam meses aqui. Discovery existe para matar ideias ruins cedo — quanto antes você aprende que algo não funciona, mais dinheiro, energia e tempo economiza.",
+    tools: [
+      { name: "Design Sprint (Google Ventures)", desc: "5 dias para resolver problemas críticos e validar ideias com protótipos. Usado por Slack, Airbnb e LEGO para acelerar discovery sem desperdício." },
+      { name: "Continuous Discovery Habits (Teresa Torres)", desc: "Entrevistas semanais com usuários como rotina + Opportunity Solution Tree. O método de discovery mais influente da última década." },
+      { name: "Lean Startup / Build-Measure-Learn", desc: "Ciclo de Eric Ries: menor experimento possível → medir resultado real → aprender. Filosofia central do Dropbox, Airbnb e GE." }
+    ],
+    case: { company: "Airbnb — Discovery que salvou o negócio e gerou bilhões", text: "Em 2009, US$200/semana e quase falindo. Os fundadores foram pessoalmente a Nova York, alugaram uma câmera e fotografaram apartamentos manualmente. A receita dobrou em uma semana. Hoje o Airbnb tem centenas de Product Researchers. O maior aprendizado: sair e falar com usuários supera qualquer análise de dados isolada." },
+    tags: ["Estratégia", "Usuário", "Validação", "MVP"],
+    mindset: "Discovery existe para matar ideias ruins cedo. Quanto antes você aprende que algo não funciona, mais dinheiro, energia e tempo economiza.",
+    episodes: [
+      { num: 1, icon: "🔍", title: "Entender problema antes de construir", desc: "O maior desperdício: construir a coisa errada com perfeição.", duration: "13 min" },
+      { num: 2, icon: "🎤", title: "Como entrevistar usuários reais", desc: "Perguntas que revelam dores reais — não validam suposições.", duration: "16 min" },
+      { num: 3, icon: "💡", title: "Criar e testar hipóteses rápido", desc: "Do problema ao experimento em horas, não semanas.", duration: "12 min" },
+      { num: 4, icon: "🧪", title: "MVP e protótipos de baixo custo", desc: "Validar sem escrever uma linha de código.", duration: "10 min" },
+      { num: 5, icon: "📊", title: "Dados que já existem no produto", desc: "Analytics e suporte já contam histórias valiosas.", duration: "9 min" }
+    ]
+  },
+  delivery: {
+    title: "Delivery",
+    match: "93% relevante",
+    duration: "Seção 06 · 3 artigos · ~33 min leitura",
+    bg: "linear-gradient(135deg,#f7941d,#fff200)",
+    icon: "🚀",
+    desc: "Ideia boa sem execução vira nada. Delivery é transformar prioridade em resultado real. O melhor delivery acontece quando prioridade clara encontra execução consistente.",
+    tools: [
+      { name: "CI/CD (Continuous Integration/Delivery)", desc: "Pipeline que integra e publica código continuamente. Netflix, Facebook e Amazon fazem centenas de deploys por dia. Permite entregas incrementais sem big bang." },
+      { name: "Feature Flags", desc: "Liga/desliga funcionalidades sem deploy. Usado por Netflix, Uber e LinkedIn para lançamentos graduais, rollback instantâneo e testes A/B em produção." },
+      { name: "DORA Metrics", desc: "4 métricas do Google/DORA: Deploy Frequency, Lead Time, Change Failure Rate, MTTR. Permite conversa baseada em dados sobre velocidade e qualidade de entrega." }
+    ],
+    case: { company: "Netflix — 4.000 deploys por dia em escala global", text: "A Netflix realiza 4.000+ deploys diários com CI/CD e Feature Flags para 260M de usuários. Em 2011, uma falha no AWS criou o Chaos Engineering — testar falhas intencionalmente em produção. Hoje é o benchmark global de delivery contínuo e engenharia de confiabilidade." },
+    tags: ["Execução", "Deploy", "Qualidade", "Velocidade"],
+    mindset: "Squad rápido sem direção só erra mais rápido. O melhor delivery acontece quando prioridade clara encontra execução consistente.",
+    episodes: [
+      { num: 1, icon: "📚", title: "Refinar backlog antes da sprint", desc: "Chegar com itens claros e preparados — não descobrir problemas na planning.", duration: "10 min" },
+      { num: 2, icon: "🧱", title: "Gerir riscos antes que virem atraso", desc: "Antecipar o problema vale mais que apagar incêndio.", duration: "12 min" },
+      { num: 3, icon: "📊", title: "Medir pós-release obrigatório", desc: "Entrega sem resultado medido é chute no escuro.", duration: "11 min" }
+    ]
+  },
+  metricas: {
+    title: "Métricas",
+    match: "99% relevante",
+    duration: "Seção 07 · 4 artigos · ~47 min leitura",
+    bg: "linear-gradient(135deg,#f7971e,#ffd200)",
+    icon: "📈",
+    desc: "Bons Product Owners não defendem opinião. Defendem decisões baseadas em evidência. Se não mede resultado, você só lançou algo — feature entregue não significa sucesso.",
+    tools: [
+      { name: "North Star Metric Framework", desc: "Uma única métrica central que captura valor ao usuário e correlaciona com crescimento. Airbnb (noites reservadas), Spotify (tempo de escuta), Facebook (DAUs)." },
+      { name: "Mixpanel / Amplitude", desc: "Analytics comportamental para funis, retenção, cohorts e jornadas. O Amplitude é usado por Dropbox, Twitter e Peloton para decisões baseadas em comportamento real." },
+      { name: "Pirate Metrics (AARRR)", desc: "Acquisition, Activation, Retention, Referral, Revenue. Identifica em qual etapa do funil o produto perde mais usuários e onde focar energia." }
+    ],
+    case: { company: "Duolingo — North Star que 16x o DAU", text: "O Duolingo escolheu DAL (Daily Active Learning) como North Star. Cada decisão de produto — notificações, streaks, design — orientada a maximizar esse número. Resultado: de 5M para 80M de DAUs com retenção de 55% (média da indústria: 10-15%). O famoso streak nasceu diretamente da análise de métricas de retenção." },
+    tags: ["Dados", "KPIs", "Resultado", "Analytics"],
+    mindset: "Se não mede resultado, você só lançou algo. Feature entregue não significa sucesso. O que importa é mudança real no comportamento ou no negócio.",
+    episodes: [
+      { num: 1, icon: "📈", title: "North Star Metric", desc: "Uma métrica que alinha todo o time em torno de valor real.", duration: "14 min" },
+      { num: 2, icon: "🔁", title: "Retenção e Churn", desc: "Os indicadores que separam produtos saudáveis dos moribundos.", duration: "13 min" },
+      { num: 3, icon: "🚪", title: "Funis e conversão", desc: "Onde os usuários abandonam e por quê.", duration: "11 min" },
+      { num: 4, icon: "🎭", title: "Métricas de vaidade vs métricas reais", desc: "Curtidas altas sem vendas — o número bonito que engana.", duration: "9 min" }
+    ]
+  },
+  stakeholders: {
+    title: "Stakeholders",
+    match: "93% relevante",
+    duration: "Seção 08 · 3 artigos · ~35 min leitura",
+    bg: "linear-gradient(135deg,#134e5e,#71b280)",
+    icon: "👥",
+    desc: "Produto não cresce sozinho. Saber lidar com stakeholders é parte central do trabalho de um PO forte. Stakeholder quer confiança — transparência, contexto e consistência resolvem mais conflito do que dizer sim para tudo.",
+    tools: [
+      { name: "Stakeholder Map (Poder × Interesse)", desc: "Quadrante que posiciona stakeholders por poder e interesse. Alto poder/alto interesse = gestão próxima; alto poder/baixo interesse = manter informado." },
+      { name: "Roadmap Now/Next/Later", desc: "Roadmap em três horizontes sem datas fechadas. Criado por Janna Bastow, adotado por Intercom e Monzo para alinhar sem criar compromissos rígidos." },
+      { name: "Executive One Pager", desc: "Documento de uma página com contexto, problema, proposta e impacto. Padrão Google e Amazon para comunicar iniciativas a executivos respeitando seu tempo." }
+    ],
+    case: { company: "Nubank — Transparência radical que construiu 90M de clientes", text: "O Nubank instituiu o 'Product Review' — reunião quinzenal onde POs apresentam resultados aos C-levels com dados, não opiniões. Garantiu alinhamento sem perda de autonomia. Esse modelo de transparência com stakeholders é citado como pilar do crescimento e inspirou fintechs como Mercado Pago e Neon." },
+    tags: ["Pessoas", "Comunicação", "Alinhamento", "Confiança"],
+    mindset: "Stakeholder quer confiança, não só resposta rápida. Transparência, contexto e consistência resolvem mais conflito do que dizer sim para tudo.",
+    episodes: [
+      { num: 1, icon: "🏢", title: "Quem são os stakeholders?", desc: "Diretoria, Comercial, Operação, Marketing, Suporte, Tech.", duration: "10 min" },
+      { num: 2, icon: "📢", title: "Como dizer não sem criar inimigos", desc: "A arte de priorizar sem destruir relacionamentos.", duration: "14 min" },
+      { num: 3, icon: "🌫️", title: "Transparência como escudo", desc: "Sem contexto, surge desconfiança. Com dados, surge respeito.", duration: "11 min" }
+    ]
+  },
+  ferramentas: {
+    title: "Ferramentas do Product Owner",
+    match: "89% relevante",
+    duration: "Seção 09 · 3 artigos · ~34 min leitura",
+    bg: "linear-gradient(135deg,#005c97,#363795)",
+    icon: "🧰",
+    desc: "O melhor PO usa ferramentas como alavanca. Nunca como muleta. Ferramenta boa em processo ruim só acelera bagunça — primeiro organize o fluxo, depois escolha a tecnologia.",
+    tools: [
+      { name: "Linear", desc: "Ferramenta de produto e engenharia preferida por startups de alto crescimento (Vercel, Loom, Raycast). Interface rápida, roadmap visual nativo, integração com GitHub." },
+      { name: "Notion", desc: "Workspace all-in-one para PRDs, roadmaps e decisões. Usado por 30M+ usuários incluindo Figma, Pitch e Superhuman. O hub de conhecimento do PO moderno." },
+      { name: "Figma", desc: "Padrão da indústria para prototipação e alinhamento UX. 4M+ times incluindo Microsoft, Twitter e Uber. POs validam fluxos antes do desenvolvimento." }
+    ],
+    case: { company: "Slack — Stack que construiu cultura de produto de classe mundial", text: "O Slack usou suas próprias ferramentas internamente (dog fooding) antes de lançá-las. GitHub + Figma + Notion + Slack eliminaram fricção no processo. Resultado: 200+ integrações em 2 anos e crescimento de 0 a 8M DAUs — o crescimento B2B mais rápido da história até então." },
+    tags: ["Ferramentas", "Stack", "Produtividade", "Tech"],
+    mindset: "Ferramenta boa em processo ruim só acelera bagunça. Primeiro organize o fluxo. Depois escolha a tecnologia que apoia esse fluxo.",
+    episodes: [
+      { num: 1, icon: "📌", title: "Jira vs Linear vs Azure DevOps", desc: "Quando usar cada um — e como não se perder neles.", duration: "13 min" },
+      { num: 2, icon: "📝", title: "Notion e Confluence para PRDs", desc: "Documentação viva que o time realmente usa.", duration: "10 min" },
+      { num: 3, icon: "📊", title: "Dashboards com Power BI e Looker", desc: "Métricas visíveis para todos os stakeholders.", duration: "11 min" }
+    ]
+  },
+  templates: {
+    title: "Templates Prontos para Usar",
+    match: "90% relevante",
+    duration: "Seção 10 · 6 artigos com templates · ~48 min leitura",
+    bg: "linear-gradient(135deg,#8e2de2,#4a00e0)",
+    icon: "📋",
+    desc: "Modelos prontos para organizar pensamento, ganhar velocidade e parecer extremamente profissional. Quem pensa bem, escreve bem. Quem escreve bem, lidera melhor.",
+    tools: [
+      { name: "PRD (Product Requirements Document)", desc: "Documento padrão da indústria para especificar o que será construído, por quê, para quem. O formato moderno inclui contexto, hipóteses e critérios de sucesso." },
+      { name: "Amazon PR/FAQ", desc: "Template interno da Amazon: escreva o press release imaginário do produto pronto antes de qualquer desenvolvimento. Adotado por centenas de empresas." },
+      { name: "Notion Templates para Produto", desc: "Ecossistema de templates prontos disponível na galeria do Notion. Comunidades como Lenny's Newsletter disponibilizam modelos usados em Figma, Stripe e Coinbase." }
+    ],
+    case: { company: "Google — Documentação que escala cultura de produto", text: "O Google institui o Design Doc antes de qualquer projeto relevante. Com 100.000+ engenheiros e PMs globalmente, o template garante que qualquer pessoa entenda uma decisão sem reuniões extras. Os OKRs do Google — levados por John Doerr em 1999 — hoje são usados por 50%+ das empresas da Fortune 500." },
+    tags: ["Templates", "Documentação", "Agilidade", "PRD"],
+    mindset: "Quem pensa bem, escreve bem. Quem escreve bem, lidera melhor. Templates servem para acelerar clareza, decisão e execução.",
+    episodes: [
+      { num: 1, icon: "🧩", title: "User Story", desc: "Como [usuário] quero [ação] para [benefício].", duration: "8 min" },
+      { num: 2, icon: "🔍", title: "Template de Discovery", desc: "Problema, hipótese, impacto, como validar, métrica de sucesso.", duration: "9 min" },
+      { num: 3, icon: "🗺️", title: "Template de Roadmap", desc: "Objetivo, iniciativas, prioridade, prazo, dependências, risco.", duration: "8 min" },
+      { num: 4, icon: "🎯", title: "Template de Priorização", desc: "Item, impacto, esforço, urgência, risco, decisão final.", duration: "7 min" },
+      { num: 5, icon: "🤝", title: "Template de Stakeholders", desc: "Tema, stakeholders, expectativas, riscos, plano de comunicação.", duration: "8 min" },
+      { num: 6, icon: "📊", title: "Template de Métricas", desc: "Objetivo, KPI, meta, baseline, frequência, plano de ação.", duration: "8 min" }
+    ]
+  },
+  situacoes: {
+    title: "Situações Reais",
+    match: "97% relevante",
+    duration: "Seção 11 · 6 artigos · ~58 min leitura",
+    bg: "linear-gradient(135deg,#e53935,#e35d5b)",
+    icon: "🧨",
+    desc: "Cenários comuns do mundo real para Product Owners agirem com maturidade, clareza e estratégia. O valor do PO aparece nos momentos difíceis — quando existe pressão, conflito ou caos, clareza vira diferencial competitivo.",
+    tools: [
+      { name: "Pre-Mortem (Gary Klein)", desc: "O time imagina que o projeto já falhou e trabalha de trás para frente para identificar causas. Popularizado pelo Google Ventures como uma das ferramentas mais eficazes para antecipar riscos." },
+      { name: "Five Whys (Toyota)", desc: "Perguntar 'por quê?' cinco vezes consecutivas até chegar à causa raiz. Amplamente usada em retrospectivas e post-mortems para evitar resolver sintomas em vez de problemas reais." },
+      { name: "SBI Feedback (Center for Creative Leadership)", desc: "Situation-Behavior-Impact: feedback difícil de forma objetiva sem gerar defensividade. Essencial para resolver conflitos com stakeholders e tech leads sob pressão." }
+    ],
+    case: { company: "Uber — Gestão de crise como diferencial de produto", text: "Em 2017, o Uber enfrentou escândalo de cultura, investigação do DOJ e saída do CEO. O time de produto manteve entregas críticas com mais autonomia local para POs. Resultado: Uber Eats lançado globalmente e expansão para 63 países durante o período mais turbulento da história da empresa. Case estudado na Harvard Business School." },
+    tags: ["Crise", "Pressão", "Decisão", "Conflito"],
+    mindset: "O valor do PO aparece nos momentos difíceis. Quando existe pressão, conflito ou caos, clareza vira diferencial competitivo.",
+    episodes: [
+      { num: 1, icon: "🔥", title: "Stakeholder pede prioridade máxima", desc: "Como responder com dados sem criar inimigos.", duration: "12 min" },
+      { num: 2, icon: "📚", title: "Time reclama de backlog confuso", desc: "Menos volume. Mais clareza. Ação imediata.", duration: "10 min" },
+      { num: 3, icon: "⏰", title: "Sprint atrasada", desc: "Proteja o que gera valor. Corte o acessório.", duration: "11 min" },
+      { num: 4, icon: "😡", title: "Usuários reclamando muito", desc: "Sintoma não é causa. Investigue padrões primeiro.", duration: "13 min" },
+      { num: 5, icon: "📈", title: "Diretoria quer resultado rápido", desc: "Quick wins inteligentes com impacto visível.", duration: "10 min" },
+      { num: 6, icon: "⚔️", title: "Conflito negócio vs tecnologia", desc: "Debate bom vence ego. Fatos, riscos e opções.", duration: "12 min" }
+    ]
+  },
+  ia: {
+    title: "IA para Product Owners",
+    match: "96% relevante",
+    duration: "Seção 12 · 6 artigos · ~57 min leitura",
+    bg: "linear-gradient(135deg,#0f0c29,#302b63,#24243e)",
+    icon: "🤖",
+    desc: "O PO que domina IA trabalha mais rápido, pensa melhor e entrega acima da média. IA não substitui Product Owner forte — ela amplia quem já pensa bem. Quem decide melhor continua vencendo.",
+    tools: [
+      { name: "ChatGPT / GPT-4o (OpenAI)", desc: "Modelo mais usado por POs para user stories, PRDs, análises de risco e comunicação executiva. 100M+ usuários. Habilidade de escrever prompts eficazes tornou-se competência diferencial." },
+      { name: "GitHub Copilot / Cursor AI", desc: "POs que entendem as ferramentas de dev conseguem conversas mais precisas sobre viabilidade e esforço. Copilot (1,3M devs) está redefinindo o que é 'baixo esforço' técnico." },
+      { name: "Prompt Engineering", desc: "A arte de estruturar instruções para IA. POs que dominam conseguem automatizar PRDs, síntese de pesquisa, análise competitiva e relatórios executivos em minutos. Skill listada em vagas de PM no Airbnb, Stripe e Linear." }
+    ],
+    case: { company: "Klarna — IA que substituiu 700 agentes em 1 mês", text: "Em 2024, o Klarna (US$45B) anunciou que sua IA realizou o trabalho de 700 agentes em 1 mês, resolvendo 2,3M de conversas. O time de produto usou IA no processo de discovery — gerando protótipos com prompts e iterando em horas. O CEO declarou que POs que não dominam IA serão substituídos por POs que dominam." },
+    tags: ["IA", "Automação", "Produtividade", "Futuro"],
+    mindset: "IA não substitui Product Owner forte. Ela amplia quem já pensa bem. Quem decide melhor continua vencendo.",
+    episodes: [
+      { num: 1, icon: "🤖", title: "ChatGPT para backlog e PRD", desc: "Prompts que transformam demandas vagas em histórias claras.", duration: "15 min" },
+      { num: 2, icon: "🧠", title: "Claude para análises profundas", desc: "Documentos longos, análises estratégicas e clareza de raciocínio.", duration: "13 min" },
+      { num: 3, icon: "🔎", title: "Perplexity para benchmark", desc: "Pesquisas rápidas com fontes verificadas em segundos.", duration: "9 min" },
+      { num: 4, icon: "📝", title: "Notion AI para documentação", desc: "Resumos, templates e organização automática de knowledge.", duration: "10 min" },
+      { num: 5, icon: "📊", title: "Gamma para apresentações executivas", desc: "Slides profissionais em minutos a partir de texto.", duration: "8 min" },
+      { num: 6, icon: "⚡", title: "Prompts prontos para usar hoje", desc: "Backlog, discovery, métricas, estratégia, report executivo.", duration: "12 min" }
+    ]
+  },
+  carreira: {
+    title: "Carreira de Product Owner",
+    match: "94% relevante",
+    duration: "Seção 13 · 4 artigos · ~52 min leitura",
+    bg: "linear-gradient(135deg,#f7971e,#ffd200)",
+    icon: "💼",
+    desc: "Product Owners valorizados não crescem por acaso. Crescem por impacto, consistência e visão. O mercado paga caro para quem resolve problemas caros — foque em impacto, negócio e liderança.",
+    tools: [
+      { name: "Lenny's Newsletter / Podcast", desc: "A referência #1 de carreira para PMs globalmente. 700.000+ assinantes. Benchmarks salariais, análises de carreira, entrevistas com líderes do Stripe, Figma e Linear." },
+      { name: "Portfolio de Produto", desc: "Documentar cases em portfólio público (Notion, Medium, site) com problema, processo, decisões e resultados. Diferencia candidatos em processos seletivos internacionais." },
+      { name: "Individual Development Plan (IDP)", desc: "Plano estruturado de desenvolvimento com objetivos de 6-12 meses, skills a desenvolver e ações concretas. Adotado por Google, Meta e Nubank. POs com IDP aceleram conversas de promoção." }
+    ],
+    case: { company: "Marty Cagan e o SVPG — O maior influenciador de carreira em produto", text: "Marty Cagan (ex-VP eBay, fundador do SVPG) é o profissional mais influente do mundo em carreira de produto. 'Inspired' (2008) e 'Empowered' (2020) são leitura obrigatória no Google, Amazon e Spotify. O conceito central — separar feature teams de product teams — moldou os critérios usados por headhunters globais para avaliar senioridade de POs." },
+    tags: ["Carreira", "Salário", "Crescimento", "Senioridade"],
+    mindset: "O mercado paga caro para quem resolve problemas caros. Foque em impacto, negócio e liderança. O resto tende a acompanhar.",
+    episodes: [
+      { num: 1, icon: "🌱", title: "PO Júnior — primeiros 90 dias", desc: "O que aprender, como se posicionar, erros a evitar.", duration: "14 min" },
+      { num: 2, icon: "⚡", title: "De Júnior para Pleno", desc: "Conduzir iniciativas sozinho e entregar resultado consistente.", duration: "12 min" },
+      { num: 3, icon: "👑", title: "Chegando ao Sênior (R$14k+)", desc: "Problemas complexos e influência estratégica.", duration: "15 min" },
+      { num: 4, icon: "🤖", title: "IA como acelerador de carreira", desc: "Produtividade acima da média chama atenção.", duration: "11 min" }
+    ]
+  },
+  certificacoes: {
+    title: "Certificações para PO",
+    match: "88% relevante",
+    duration: "Seção 14 · 4 artigos · ~46 min leitura",
+    bg: "linear-gradient(135deg,#b8860b,#ffd700)",
+    icon: "🏆",
+    desc: "Certificações certas podem acelerar sua carreira, abrir portas e elevar seu nível profissional. Certificação abre a porta — quem permanece e cresce é quem gera resultado real depois que entra.",
+    tools: [
+      { name: "Scrum.org (PSPO I, II, III)", desc: "Organização de Ken Schwaber (co-criador do Scrum). A mais rigorosa e respeitada globalmente — exame baseado em conhecimento real, não presença em treinamento." },
+      { name: "Product School", desc: "Cursos intensivos reconhecidos por Google, Facebook e Amazon. Publica o 'Product Management Festival' anual — o maior evento de produto do mundo." },
+      { name: "Reforge", desc: "Plataforma de Brian Balfour (ex-VP Growth HubSpot) com programas de 6-8 semanas em Growth, Retention e Strategy. O MBA de produto para chegar a Director/VP." }
+    ],
+    case: { company: "Shopify — Certificações como vantagem competitiva", text: "O Shopify criou o 'Product Craft' combinando certificações externas (PSPO, Product School) com projetos internos reais. Resultado: 60%+ das posições sênior preenchidas por promoções internas. Reconhecido pelo LinkedIn Learning como modelo de desenvolvimento de talentos em produto." },
+    tags: ["Certificação", "PSPO", "Carreira", "Estudo"],
+    mindset: "Certificação abre a porta. Quem permanece e cresce é quem gera resultado real depois que entra.",
+    episodes: [
+      { num: 1, icon: "🥇", title: "PSPO I — Por onde começar", desc: "Base sólida da Scrum.org. O mínimo esperado pelo mercado.", duration: "11 min" },
+      { num: 2, icon: "🚀", title: "PSPO II — Nível avançado", desc: "Decisões complexas e produto real com mais profundidade.", duration: "13 min" },
+      { num: 3, icon: "📌", title: "CSPO — Scrum Alliance", desc: "Certificação tradicional com foco em colaboração e backlog.", duration: "10 min" },
+      { num: 4, icon: "🔮", title: "AI for Product — O futuro chegou", desc: "Cursos focados em IA aplicada a produto digital.", duration: "12 min" }
+    ]
+  },
+  glossario: {
+    title: "Glossário — 443 Termos do Mercado",
+    match: "100% relevante",
+    duration: "Seção 15 · 5 artigos · 443 termos · ~113 min leitura",
+    bg: "linear-gradient(135deg,#232526,#414345)",
+    icon: "📖",
+    desc: "Os termos reais que você escuta em reuniões com CEO, PM, Tech Lead, Scrum Master e Product Owners experientes. 13 categorias: Agile, Arquitetura, Dados, Estratégia, Financeiro, Gestão, Growth, Marketing, Operações, Produto, Tech, UX/UI.",
+    tools: [
+      { name: "Product Glossary by Amplitude", desc: "Glossário público de métricas e termos de produto com fórmulas e exemplos práticos. Referência no mercado para DAU, WAU, Retention Curve e Activation Rate." },
+      { name: "Shape Up Glossary (Basecamp)", desc: "Vocabulário próprio do método Shape Up: Appetite, Betting Table, Hill Charts, Scopes. Essencial para times que adotaram o método como alternativa ao Scrum." },
+      { name: "Reforge Artifact Library", desc: "Definições usadas por líderes sênior em Silicon Valley — outcome vs output, input vs lagging metrics, growth loops. Diferencia POs que pensam em sistema dos que pensam em execução." }
+    ],
+    case: { company: "Atlassian Team Playbook — Glossário que padroniza cultura de produto", text: "O Atlassian Team Playbook — glossário e biblioteca de rituais ágeis — foi baixado 500.000+ vezes e é usado por times de produto em 10.000+ empresas para padronizar linguagem e processos. O próprio Wikipedia com 6,7M artigos é o maior case de democratização de vocabulário técnico da história." },
+    tags: ["Referência", "Glossário", "Vocabulário", "Termos"],
+    mindset: "Dominar o vocabulário do mercado é dominar a linguagem do poder. Quem fala a língua certa, é ouvido na mesa certa.",
+    episodes: [
+      { num: 1, icon: "🌱", title: "Termos Agile & Scrum (30 termos)", desc: "Sprint, Planning, Velocity, WIP, Burndown e muito mais.", duration: "20 min" },
+      { num: 2, icon: "📈", title: "Termos de Dados & Métricas (40 termos)", desc: "KPI, NPS, DAU, Cohort, Funnel, North Star e mais.", duration: "22 min" },
+      { num: 3, icon: "💰", title: "Termos Financeiros (35 termos)", desc: "ARR, MRR, CAC, LTV, Churn, ROI, Runway.", duration: "18 min" },
+      { num: 4, icon: "📣", title: "Termos de Growth & Marketing (50 termos)", desc: "A/B Test, Activation, Viral Coefficient, AARRR.", duration: "25 min" },
+      { num: 5, icon: "💻", title: "Termos Tech (60 termos)", desc: "API, CI/CD, Feature Flag, Tech Debt, SLI, MTTR.", duration: "28 min" }
+    ]
+  },
+
+  primeiros_passos: {
+    title: "Primeiros Passos em Produto",
+    match: "100% relevante",
+    duration: "Seção 16 · 6 artigos · ~65 min leitura",
+    bg: "linear-gradient(135deg,#0d1b2a,#1b2838,#2d4a6e)",
+    icon: "🌱",
+    desc: "O guia que ninguém te deu quando você entrou. Da primeira sprint ao primeiro impacto real: entenda o que aprender, o que evitar, como se posicionar e como crescer rápido sem queimar pontes. Para quem está começando agora — ou quer recomeçar do jeito certo.",
+    tools: [
+      { name: "Product School — Free Courses", desc: "Cursos gratuitos de fundamentos de produto. Ponto de partida recomendado por PMs de Google, Meta e Airbnb para quem está entrando na área." },
+      { name: "Lenny's Newsletter", desc: "A newsletter mais lida por PMs do mundo. Cases reais, frameworks práticos e entrevistas com líderes de produto de empresas top." },
+      { name: "Reforge", desc: "Plataforma de crescimento profissional para PMs. Programas intensivos com ex-líderes de produto de Uber, Pinterest e Duolingo." }
+    ],
+    case: { company: "Airbnb — Jony Ive do Produto", text: "Brian Chesky começou sem saber nada de produto. Aprendeu fazendo: hospedou hóspedes em casa, ligou para cada usuário, mapeou cada fricção manualmente. Resultado: a cultura de 'product obsession' do Airbnb virou referência. O melhor primeiro passo é obsedar pelo usuário antes de qualquer framework." },
+    tags: ["Iniciante", "Carreira", "Fundamentos", "Onboarding"],
+    mindset: "O melhor PO iniciante não é o que mais sabe — é o que mais escuta, mais pergunta e mais aprende com cada entrega.",
+    episodes: [
+      { num: 1, icon: "🗺️", title: "Por onde começar: o mapa do território", desc: "Visão geral do ecossistema de produto e onde você está agora.", duration: "10 min" },
+      { num: 2, icon: "🎯", title: "O que estudar nos primeiros 90 dias", desc: "Prioridades de aprendizado para quem acabou de entrar na área.", duration: "12 min" },
+      { num: 3, icon: "🤝", title: "Como se comportar no primeiro time", desc: "Escutar mais, falar menos e entregar valor antes de opinar.", duration: "9 min" },
+      { num: 4, icon: "⚠️", title: "Erros comuns de quem está começando", desc: "As armadilhas que todo iniciante cai — e como desviar delas.", duration: "11 min" },
+      { num: 5, icon: "📣", title: "Como ganhar visibilidade sendo júnior", desc: "Mostrar impacto sem parecer ansioso ou arrogante.", duration: "13 min" },
+      { num: 6, icon: "🚀", title: "Seu primeiro produto: do zero ao aprendizado", desc: "Como conduzir seu primeiro ciclo completo de discovery e entrega.", duration: "10 min" }
+    ]
+  },
+};
+
+// ─── MODAL OPEN/CLOSE ──────────────────────────────────────────────────────
+function openModal(id) {
+  const d = data[id];
+  if (!d) return;
+
+  document.getElementById('modal-hero-bg').style.background = d.bg;
+  document.getElementById('modal-title').textContent = d.icon + ' ' + d.title;
+  document.getElementById('modal-match').textContent = d.match;
+  document.getElementById('modal-duration').textContent = d.duration;
+  document.getElementById('modal-desc').textContent = d.desc;
+
+  // Tools
+  const toolsEl = document.getElementById('modal-tools');
+  toolsEl.innerHTML = d.tools.map(t => {
+    const url = TOOL_URLS[t.name] || ('https://www.google.com/search?q=' + encodeURIComponent(t.name + ' product management'));
+    const nameHtml = url
+      ? `<a href="${url}" target="_blank" rel="noopener" style="color:#54b9c5;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${t.name} ↗</a>`
+      : `<span>${t.name}</span>`;
+    return `<div class="modal-tool-item"><strong>${nameHtml}</strong><span>${t.desc}</span></div>`;
+  }).join('');
+
+  // Case
+  (function() {
+    const caseEl = document.getElementById('modal-case');
+    const companyKey = Object.keys(CASE_URLS).find(k => d.case.company.includes(k));
+    const companyName = d.case.company.split('—')[0].trim().split(' ')[0];
+    const caseUrl = companyKey ? CASE_URLS[companyKey] : ('https://www.google.com/search?q=' + encodeURIComponent(companyName + ' product strategy case study'));
+    const linkHtml = caseUrl
+      ? `<a href="${caseUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:rgba(70,211,105,0.12);color:#46d369;border:1px solid rgba(70,211,105,0.3);padding:6px 14px;border-radius:4px;font-size:0.78rem;font-weight:700;text-decoration:none;" onmouseover="this.style.background='rgba(70,211,105,0.22)'" onmouseout="this.style.background='rgba(70,211,105,0.12)'">🔍 Ver case completo ↗</a>`
+      : '';
+    caseEl.innerHTML = `<strong>🏆 ${d.case.company}</strong>${d.case.text}${linkHtml}`;
+  })();
+
+  // Tags
+  document.getElementById('modal-tags').innerHTML =
+    d.tags.map(t => `<span class="modal-tag" onclick="closeModal();setTimeout(()=>{document.getElementById('section-categories').scrollIntoView({behavior:'smooth'})},200)" style="cursor:pointer" title="Ver seções com este tema">${t}</span>`).join('');
+  document.getElementById('modal-cats').textContent = d.tags.join(', ');
+
+  // Mindset
+  (function() {
+    var el = document.getElementById('modal-mindset');
+    var secTitle = d.title ? encodeURIComponent(d.title + ' mindset produto') : 'mindset+product+owner';
+    var searchUrl = 'https://www.google.com/search?q=' + secTitle;
+    el.innerHTML = '\u201c' + d.mindset + '\u201d' +
+      '<a href="' + searchUrl + '" target="_blank" rel="noopener" ' +
+      'style="display:block;margin-top:8px;font-size:0.72rem;color:#54b9c5;font-style:normal;text-decoration:none;" ' +
+      'onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">' +
+      '🔍 Explorar este conceito ↗</a>';
+  })();
+
+  // Articles (formerly episodes)
+  const epEl = document.getElementById('modal-episodes');
+  epEl.innerHTML = d.episodes.map((ep, idx) => {
+    return '<div class="article-item" onclick="openArticleReader(\'' + id + '\', ' + idx + ', event)">' +
+      '<span class="article-num">' + ep.num + '</span>' +
+      '<div class="article-icon">' + ep.icon + '</div>' +
+      '<div class="article-info">' +
+        '<div class="article-title">' + ep.title + '</div>' +
+        '<div class="article-desc">' + ep.desc + '</div>' +
+        '<div class="article-meta">' +
+          '<span class="article-readtime">⏱ ' + ep.duration + ' de leitura</span>' +
+          '<span class="article-cta">📖 Ler artigo</span>' +
+        '</div>' +
+      '</div>' +
+      '<span class="article-chevron">›</span>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ─── SCROLL ROWS ────────────────────────────────────────────────────────────
+function scrollRow(btn, direction) {
+  const wrapper = btn.parentElement;
+  const track = wrapper.querySelector('.row-track');
+  if (track) track.scrollBy({ left: direction * 700, behavior: 'smooth' });
+}
+
+// ─── FILTER CATEGORY ────────────────────────────────────────────────────────
+function filterCategory(cat, btn) {
+  document.querySelectorAll('.genre-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const cards = document.querySelectorAll('#row-category .card');
+  cards.forEach(card => {
+    if (cat === 'all' || card.dataset.cat === cat) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// ─── NAVBAR SCROLL ──────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ─── KEYBOARD ESC ───────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── ARTICLES DATA ─────────────────────────────────────────────────────────
+const ARTICLES = {"fundamentos": [{"content": ["O Product Owner não é um gerente de tarefas disfarçado. Ele é o elo entre o que o negócio precisa, o que o usuário deseja e o que a tecnologia consegue entregar. Esse papel exige uma combinação rara de habilidades: entender profundamente o mercado, traduzir estratégia em itens acionáveis e inspirar o time a construir com propósito.", "Na prática, o PO forte passa grande parte do tempo fora do Jira. Ele está em conversas com usuários, analisando dados de comportamento, participando de decisões estratégicas e garantindo que cada item do backlog tenha um problema real por trás — não apenas uma solicitação de stakeholder. A diferença entre um PO operacional e um PO estratégico está exatamente nessa postura.", "Times que têm um PO forte entregam mais com menos. Não porque trabalham mais rápido, mas porque raramente constroem a coisa errada. Cada sprint tem direção clara, cada feature nasce de uma hipótese validada, e o resultado — aquele que realmente muda o comportamento do usuário — é a única métrica que importa."]}, {"content": ["Existe uma lista silenciosa de coisas que destroem a credibilidade de um PO rapidamente: aceitar tudo que chega como urgente, reescrever tickets que o time devolveu, transformar a daily em status report e confundir o backlog cheio com trabalho bem feito. O PO que faz isso não está entregando produto — está administrando caos.", "Dizer não — ou melhor, dizer 'não agora, e aqui está o porquê' — é uma das habilidades mais poderosas do PO. Isso exige clareza sobre a estratégia, confiança nos dados e coragem para defender prioridades mesmo sob pressão de stakeholders. Um 'sim' fácil cria dívida de escopo que o time vai pagar no futuro.", "O PO que aprende a delimitar responsabilidades libera energia para o que realmente importa: entender o problema a fundo. Cada hora poupada em reuniões desnecessárias pode ser reinvestida em discovery, análise de métricas e alinhamento com a visão de produto. Esse é o ciclo virtuoso do PO de alto impacto."]}, {"content": ["Priorizar é essencialmente decidir o que não fazer. Num backlog com 200 itens, tudo parece importante — mas apenas um punhado realmente move o negócio. O PO forte usa frameworks como RICE, ICE ou matrizes de impacto vs esforço para transformar opiniões em decisões baseadas em dados.", "A armadilha mais comum é priorizar pelo volume de pedidos: o stakeholder que pede mais vezes acaba na frente. Isso cria um backlog politicamente gerenciado, não estrategicamente gerenciado. O antídoto é sempre ligar cada item a um outcome mensurável: 'se fizermos isso, o que muda no comportamento do usuário ou no resultado do negócio?'", "Times que trabalham com priorização explícita tomam decisões mais rápidas, com menos conflito e maior alinhamento. O PO que consegue explicar em uma frase por que X está antes de Y — com dados — conquista a confiança do time, dos stakeholders e da liderança. Essa confiança é o ativo mais valioso de qualquer PO."]}, {"content": ["Quando alguém chega com 'precisamos de um botão para exportar relatório em PDF', a resposta do PO fraco é abrir o Jira. A resposta do PO forte é perguntar: 'por que você precisa disso? O que você vai fazer com esse PDF?'. Na maioria dos casos, o pedido pronto esconde uma dor real que pode ser resolvida de forma muito mais inteligente.", "Essa prática se chama Problem First — e é a base de todo bom discovery. O usuário descreve sintomas, não causas. Ele pede soluções que imagina, não os problemas que sente. Cabe ao PO fazer as perguntas certas para chegar à raiz: qual é a jornada atual? Onde ela quebra? O que o usuário está tentando realizar?", "Um PO que entende o problema profundamente raramente constrói a solução errada. Mais importante: ele consegue propor soluções que o usuário jamais teria imaginado — e que entregam 10x mais valor do que o pedido original. Esse é o trabalho que diferencia produto de commodity."]}, {"content": ["Como é o dia de um PO de alto impacto? Começa revisando métricas do produto — não para fazer relatório, mas para identificar anomalias e oportunidades. Um pico de churn, uma queda de ativação, uma sessão mais longa em determinada feature: esses sinais contam histórias que a daily nunca vai revelar.", "No meio do dia, o PO forte divide atenção entre backlog refinement e conversas qualitativas — com usuários, com o time de suporte ou com o comercial. O objetivo é manter o backlog vivo e conectado à realidade. Items vagos ou desconectados de problema real são removidos ou reescritos sem cerimônia.", "No final do dia, o PO reserva espaço para pensar estrategicamente: qual é o próximo grande problema a resolver? O roadmap está alinhado com os OKRs? O time entende o porquê de cada sprint? POs que não fazem essa reflexão regular acabam reativos — e produto reativo é produto que nunca lidera."]}], "cargos": [{"content": ["PO e PM são siglas que muitas empresas usam de forma intercambiável — mas representam focos diferentes. O Product Owner tem origem no Scrum e atua como responsável pelo backlog e pela maximização do valor entregue em cada sprint. O Product Manager olha o produto de forma mais ampla: estratégia de mercado, posicionamento e ciclo de vida.", "Na maioria das empresas de tecnologia maduras, o PM define a visão e a estratégia de longo prazo; o PO executa e garante que o time entregue valor sprint a sprint. Em startups early-stage, uma única pessoa faz os dois papéis. O problema surge quando a empresa cresce e ninguém define onde um papel termina e o outro começa.", "A confusão entre PO e PM cria dois problemas sérios: o PO vira um operacional que nunca pensa estrategicamente, ou o PM vira um gestor de backlog que nunca olha para fora. Times de produto maduros têm clareza sobre essa distinção — e usam ela para liberar cada papel operar no seu melhor nível."]}, {"content": ["O Scrum Master e o PO têm papéis complementares que, quando bem exercidos, criam uma sinergia poderosa. O PO define o que vale a pena construir e por quê. O SM garante que o processo de construção seja eficiente e livre de impedimentos. Quando os dois papéis se confundem, o resultado é um PO que vira facilitador ou um SM que começa a influenciar prioridades.", "Um sinal claro de que os papéis estão sobrepostos: o SM começa a questionar a priorização do PO em público, ou o PO passa mais tempo facilitando reuniões do que fazendo discovery. Clareza de papel não é burocracia — é a condição para que cada função opere com autonomia e responsabilidade.", "Times com PO e SM bem definidos entregam consistentemente mais. O SM remove fricção do processo; o PO remove fricção da direção. Juntos, criam o ambiente onde o time de desenvolvimento pode operar em fluxo — construindo com velocidade e com propósito ao mesmo tempo."]}, {"content": ["A relação entre PO e Tech Lead é onde produto e engenharia se encontram — e frequentemente onde surgem as maiores tensões. O PO define o problema e o impacto esperado. O Tech Lead define como construir a solução com qualidade e viabilidade técnica. Quando esses dois papéis respeitam mutuamente sua expertise, as decisões de produto ficam muito mais ricas.", "O PO que ignora a opinião técnica acaba criando features frágeis, com dívida técnica embutida e difíceis de evoluir. O Tech Lead que não entende o problema do usuário acaba construindo soluções elegantes para o problema errado. A colaboração real acontece quando os dois chegam juntos ao refinamento.", "Uma prática poderosa: PO e Tech Lead fazem juntos a estimativa de esforço vs impacto. O PO traz os dados de negócio, o Tech Lead traz a complexidade técnica. Essa conversa elimina surpresas na sprint e cria um senso de co-propriedade sobre o produto que transforma a dinâmica do time."]}, {"content": ["UX e PO trabalham com a mesma matéria-prima — o usuário — mas com lentes diferentes. O designer de UX investiga comportamentos, cria jornadas e valida usabilidade. O PO prioriza o que resolve mais dor com menos esforço e maximiza o resultado de negócio. Quando os dois papéis trabalham em sincronia, o produto fica ao mesmo tempo útil, usável e viável.", "O modelo mais eficiente é o Dual-Track Agile: enquanto o time de desenvolvimento executa a sprint atual, o PO e o UX estão em discovery para a próxima. Isso garante que o backlog seja alimentado com hipóteses já validadas — não com ideias cruas que o time vai questionar no refinamento.", "Times sem clareza entre PO e UX costumam ter dois problemas: features bonitas que não resolvem o problema certo, ou soluções corretas embrulhadas em interfaces confusas. O equilíbrio entre valor e experiência é o diferencial do produto que os usuários amam e recomendam."]}], "scrum": [{"content": ["A Sprint é o coração do Scrum — um ciclo curto, tipicamente de 1 a 4 semanas, onde o time se compromete a entregar algo utilizável e valioso. A lógica é simples: ciclos curtos forçam priorização, reduzem o risco de construir na direção errada por muito tempo e criam um ritmo de aprendizado contínuo.", "O Sprint Goal — o objetivo da sprint — é mais importante do que a lista de itens. Um bom Sprint Goal é uma sentença clara que responde: 'o que queremos aprender ou entregar nessa sprint, e por que isso importa agora?'. Times que operam com Sprint Goals bem definidos têm mais foco e tomam decisões melhores quando surgem imprevistos.", "Sprints curtas expõem problemas mais cedo. Se o backlog está confuso, a planning vai ser sofrida. Se o processo tem gargalos, eles aparecem na daily. O Scrum não resolve esses problemas — ele os torna visíveis para que o time possa endereçá-los conscientemente."]}, {"content": ["A Sprint Planning é o momento onde o time transforma prioridade em compromisso. O PO apresenta os itens mais importantes do backlog, o time questiona, estima e negocia escopo. Uma planning bem executada termina com clareza sobre o objetivo da sprint e com o time confiante sobre o que será entregue.", "O erro mais comum na planning é entrar com itens mal refinados. Se a user story ainda tem dúvidas abertas, se o design não está pronto, se há dependências não resolvidas — a planning vai virar uma reunião de descoberta improvisada. O antídoto é o backlog refinement regular: reuniões menores e mais frequentes.", "A planning também é o momento de ajustar a velocidade do time. Com o tempo, o time aprende seu ritmo real e a planning fica mais precisa. Esse aprendizado coletivo é um dos ativos mais valiosos de um time ágil maduro."]}, {"content": ["A Daily Scrum é 15 minutos que podem transformar ou destruir a dinâmica de um time. Quando bem executada, ela sincroniza o trabalho, identifica bloqueios e cria a sensação de que o time está navegando junto. Quando vira um relatório de status, ela se torna uma reunião que todos toleram mas ninguém valoriza.", "A virada acontece quando o foco muda de 'o que fiz' para 'o que precisamos fazer para alcançar o Sprint Goal'. Essa pequena mudança transforma a daily de individual para coletiva. O time começa a se auto-organizar, a pedir ajuda mais cedo e a identificar dependências antes que virem atrasos.", "O SM tem papel crítico aqui: não de facilitador obrigatório, mas de guardião do formato. Se a daily está virando longa demais, se os bloqueios nunca são resolvidos — esses são sinais de que o time precisa repensar como usa os 15 minutos. A daily é um espelho da saúde do time."]}, {"content": ["A Retrospectiva é a cerimônia mais importante do Scrum — e a mais subestimada. É onde o time tem espaço para falar o que não funcionou, celebrar o que funcionou e decidir coletivamente o que vai mudar. Uma retro bem conduzida gera comprometimento; uma retro mal conduzida gera cinismo.", "O padrão que mata a retrospectiva: listar problemas, discutir, e não decidir nada concreto. O time percebe isso rapidamente e começa a tratar a retro como ritual sem propósito. O antídoto é simples: cada retro termina com no máximo 2 ações concretas, com dono e prazo definidos.", "Times que levam a retro a sério evoluem de forma composta: cada sprint fica um pouco melhor do que a anterior. Não em velocidade bruta, mas em qualidade de processo, comunicação e entrega de valor. Essa evolução consistente é o que separa times ágeis de times que apenas usam terminologia ágil."]}], "backlog": [{"content": ["O backlog é a lista priorizada de tudo que o time pode construir para entregar valor ao produto. Não é uma lista de tarefas técnicas, não é um repositório de pedidos de stakeholders e definitivamente não é um cemitério de ideias. É uma ferramenta viva de decisão — e como toda ferramenta, perde valor quando não é cuidada.", "Um backlog saudável tem três características: é priorizado (os itens mais importantes estão no topo), é refinado (os próximos itens estão detalhados o suficiente para o time trabalhar) e é enxuto (itens que perderam relevância são removidos). Backlog com 500 itens não refinados é uma dívida de contexto, não um ativo.", "O PO que mantém o backlog vivo tem uma vantagem competitiva real: menos surpresas na planning, menos retrabalho na sprint e mais confiança do time nas decisões de prioridade. O backlog é o artefato mais visível do trabalho do PO — e reflete diretamente a qualidade do seu pensamento estratégico."]}, {"content": ["O RICE Score é um dos frameworks de priorização mais eficientes disponíveis — criado pelo Intercom para resolver um problema que todo PO conhece: o backlog sendo governado por quem grita mais alto. A fórmula é simples: (Reach × Impact × Confidence) ÷ Effort. Cada variável força o PO a pensar de forma mais rigorosa sobre o valor real de cada item.", "Reach mede quantos usuários serão afetados por período. Impact mede o quanto isso muda seu comportamento. Confidence é sua certeza sobre essas estimativas. Effort é o trabalho estimado em pessoa-semanas. Juntos, criam um número comparável entre itens completamente diferentes.", "O RICE não é uma fórmula mágica — é uma conversa estruturada. Os números em si importam menos do que o processo de chegar a eles: o PO, o time e os stakeholders discutem cada variável explicitamente, expõem suas suposições e chegam a um consenso fundamentado. Isso reduz conflito político e aumenta a confiança nas decisões."]}, {"content": ["Os erros mais comuns que destroem um backlog começam antes mesmo de qualquer item ser escrito. O primeiro é a ausência de um problema claro: a história começa com solução ('adicionar botão X') sem descrever o problema que ela resolve. Sem o porquê, o time não consegue tomar boas decisões durante a implementação.", "O segundo erro clássico é o backlog politicamente gerenciado: cada área da empresa tem seus itens prioritários, e o PO não tem coragem ou dados suficientes para dizer não. O resultado é uma lista de 'prioridades máximas' onde tudo é urgente e nada avança.", "O terceiro erro é o backlog como cemitério: itens que entraram com entusiasmo há seis meses e nunca foram executados ocupam espaço e geram ruído. A solução é simples mas culturalmente difícil: deletar ou arquivar impiedosamente qualquer item que não tenha mais contexto, dono ou relevância estratégica."]}], "discovery": [{"content": ["O maior desperdício em produto digital não é construir lento — é construir a coisa errada com perfeição. Times que vão direto para soluções sem entender o problema fundo estão jogando dinheiro e energia no vento. O discovery existe para proteger o time desse erro: criar espaço entre o problema identificado e a solução construída.", "Entender o problema a fundo significa ir além do pedido superficial e investigar o contexto real: quem é o usuário afetado, qual é a jornada atual, onde ela falha, qual é o custo dessa falha e o que define sucesso. Esse trabalho raramente cabe numa user story de três linhas.", "Times que investem tempo em discovery consistentemente entregam produtos mais relevantes, com menos retrabalho e maior impacto. Cada hora de discovery economiza em média dez horas de desenvolvimento na direção errada. Esse é o ROI mais subestimado em produto."]}, {"content": ["Entrevistar usuários parece simples até você sentar na frente de um pela primeira vez e perceber que está fazendo todas as perguntas erradas. 'Você usaria essa feature?' recebe quase sempre um 'sim' — porque as pessoas são amáveis e porque imaginar usar algo é completamente diferente de realmente usar.", "As melhores perguntas de entrevista começam com 'me conta sobre a última vez que você...' ou 'como você lida hoje com...'. Elas tiram o usuário do campo hipotético e trazem para o campo da experiência real. O PO deve resistir à tentação de validar sua hipótese — o objetivo é aprender, não confirmar.", "A cadência recomendada por Teresa Torres é de pelo menos uma entrevista por semana — não para criar relatórios formais, mas para manter o contato contínuo com a realidade do usuário. POs que entrevistam regularmente desenvolvem um instinto calibrado que melhora todas as suas decisões de prioridade."]}, {"content": ["Uma hipótese de produto bem formulada tem três elementos: um problema claro, uma solução proposta e uma métrica de sucesso. 'Se construirmos X, acreditamos que Y vai acontecer, e saberemos que funcionou quando Z mudar.' Essa estrutura força o PO a pensar além da entrega.", "Testar hipóteses rapidamente é o antídoto para o planejamento excessivo. Um protótipo de papel, uma landing page fake ou um concierge MVP podem validar ou invalidar uma hipótese em dias — sem escrever uma linha de código. O objetivo não é lançar, é aprender o suficiente para decidir com mais confiança.", "Times que operam com ciclos curtos de hipótese-teste-aprendizado raramente desperdiçam uma sprint inteira numa direção errada. Eles erram rápido, corrigem rápido e constroem com muito mais certeza quando finalmente vão para desenvolvimento."]}, {"content": ["MVP não significa produto ruim lançado cedo — significa a menor experiência possível que valida sua hipótese mais crítica. O erro mais comum é chamar de MVP um produto com metade das features planejadas mas ainda complexo demais para aprender algo útil.", "Existem dezenas de formatos de validação antes do desenvolvimento: o Wizard of Oz (simular automação manualmente), o Concierge (fazer o serviço humano antes de automatizar), o Smoke Test (landing page que mede intenção). Cada um responde perguntas diferentes com custos diferentes.", "A escolha do formato de validação certo é uma skill do PO. Ela depende de qual hipótese precisa ser testada, qual é o custo de estar errado e qual é a velocidade necessária. POs que dominam esse repertório constroem produtos mais ousados — porque sabem como testar antes de apostar."]}, {"content": ["O produto que você já tem é uma mina de ouro de insights — e a maioria dos times não explora nem 10% dela. Análise de funil, mapas de calor, gravações de sessão, taxa de adoção de features, queries de suporte: cada uma dessas fontes revela comportamentos reais que nenhuma entrevista consegue capturar com a mesma escala.", "O PO que desenvolve o hábito de olhar dados do produto regularmente desenvolve uma intuição calibrada por evidência. Ele sabe quais features estão sendo usadas, quais estão sendo ignoradas e onde os usuários abandonam. Esse conhecimento muda completamente a qualidade do discovery.", "A combinação de dados quantitativos (o quê está acontecendo) com dados qualitativos (por quê está acontecendo) é o melhor discovery possível. O número diz onde olhar; a entrevista diz o que significa. POs que integram essas duas lentes tomam decisões que raramente precisam ser revertidas."]}], "delivery": [{"content": ["Um backlog refinado antes da sprint elimina a maioria dos problemas de entrega antes que aconteçam. Quando o time chega na planning com histórias claras, critérios de aceite definidos e dependências identificadas, a sprint tem muito mais chance de terminar no prazo e com qualidade.", "O ritmo saudável de refinement é de duas sessões por semana, de 30 a 45 minutos cada. O objetivo é garantir que os próximos dois ou três itens prioritários estejam prontos para entrar na sprint seguinte. Esse buffer evita a síndrome do 'descobrimos na planning que essa história está incompleta'.", "POs que negligenciam o refinement pagam o preço na sprint: retrabalho de design no meio do desenvolvimento, histórias retornando por falta de contexto, dailies dominadas por dúvidas que deveriam ter sido resolvidas antes. O custo de corrigir um problema na planning é dez vezes menor do que corrigir durante o desenvolvimento."]}, {"content": ["Gestão de risco em produto não é uma planilha de compliance — é o hábito de fazer perguntas desconfortáveis antes que a realidade force a resposta. Quais são as premissas não validadas dessa feature? O que acontece se a integração com o sistema legado falhar? O time tem capacidade real para isso nessa sprint?", "Existem três categorias de risco que todo PO deve monitorar: risco técnico (complexidade maior do que estimada), risco de negócio (hipótese de valor não validada) e risco de processo (dependência externa não confirmada). Cada uma exige uma abordagem diferente.", "Times que praticam a gestão de risco explícita desenvolvem uma cultura de antecipação que reduz incêndios dramaticamente. O PO que identifica um risco uma semana antes tem opções. O PO que descobre o mesmo risco no meio da sprint tem uma crise."]}, {"content": ["Lançar uma feature sem medir o resultado é equivalente a investir dinheiro sem saber no quê. O time gastou energia, o PO priorizou em cima de outros itens, a empresa assumiu custo de oportunidade — e sem uma métrica de sucesso definida antes do lançamento, ninguém sabe se valeu a pena.", "O ritual do pós-release deve ser definido antes do desenvolvimento começar: qual métrica vai mudar, qual é o baseline atual, qual é a meta esperada e em quanto tempo esperamos ver o resultado. Isso não é overhead — é o mínimo de responsabilidade que um PO deve ter com cada entrega.", "Times que fecham o loop de delivery com medição sistemática aprendem muito mais rápido. Eles sabem o que funciona, constroem intuição sobre seu mercado e desenvolvem uma reputação de 'time que entrega resultado' — não apenas 'time que entrega features'."]}], "metricas": [{"content": ["A North Star Metric é o número que captura o valor que seu produto entrega ao usuário de forma mais direta — e que, ao crescer de forma sustentável, prediz o crescimento do negócio. O conceito foi popularizado pelo Amplitude e adotado pelas empresas de produto mais bem-sucedidas: Airbnb usa 'noites reservadas', Spotify usa 'tempo de escuta'.", "O erro mais comum é confundir North Star com métrica de vaidade. Usuários cadastrados, downloads ou pageviews podem crescer sem que o produto esteja entregando valor real. Uma boa North Star reflete engajamento ativo com o core value proposition — não presença superficial.", "Definir a North Star do produto é um exercício estratégico profundo que envolve o time inteiro. Quando bem definida, ela alinha todas as decisões de produto: cada feature proposta deve ser testada com a pergunta 'isso move nossa North Star?'."]}, {"content": ["Retenção é a métrica que separa produtos sustentáveis de produtos que dependem eternamente de aquisição para sobreviver. Um produto com retenção ruim é como um balde furado: não importa quanto você coloca, sempre vaza. Melhorar retenção é frequentemente a alavanca de maior retorno.", "A curva de retenção revela a saúde do produto: se ela continua caindo até zero, o produto tem um problema estrutural de valor. Se ela se estabiliza em algum ponto, existe um core de usuários que encontrou valor real — e o trabalho é entender quem são e como replicar isso.", "Churn rate — a porcentagem de usuários que abandonam por período — é o outro lado da mesma moeda. Em SaaS, um churn mensal de 5% representa perder 46% da base em um ano. POs que monitoram churn religiosamente conseguem identificar padrões de abandono cedo o suficiente para intervir."]}, {"content": ["Funis de conversão revelam onde os usuários abandonam a jornada — e por quê. Um funil de ativação típico em SaaS pode ter: cadastro → verificação de email → primeiro login → criação do primeiro item → convite de colaborador. Cada etapa tem uma taxa de conversão, e a menor costuma esconder o maior problema de produto.", "A análise de funil é mais poderosa quando combinada com segmentação: usuários de canais diferentes convertem de formas diferentes? O comportamento varia por região ou tamanho de empresa? Essas perguntas transformam uma análise plana numa investigação de discovery estruturada.", "POs que dominam análise de funil conseguem priorizar melhor do que qualquer framework teórico permite. Quando você sabe que 70% dos usuários abandona antes de chegar à feature core, você sabe exatamente onde o produto está quebrando e qual problema resolver primeiro."]}, {"content": ["Métricas de vaidade são números que parecem impressionantes em apresentação mas não dizem nada sobre a saúde real do produto. Usuários registrados sem considerar ativos, visualizações de página sem considerar ação, downloads sem considerar retenção: esses números crescem com marketing, não com valor de produto.", "A distinção entre métrica de vaidade e métrica real é sempre a mesma pergunta: 'se esse número cresce, o que mudou de verdade no comportamento do usuário ou no resultado do negócio?'. Usuários que voltam, completam uma ação-chave, pagam, recomendam — esses são comportamentos reais.", "POs que aprendem a fazer essa distinção desenvolvem uma imunidade à ilusão de crescimento. Eles não se satisfazem com 'aumento de usuários registrados' sem saber a ativação e retenção por trás. Essa postura cria produto mais honesto e decisões mais corajosas."]}], "stakeholders": [{"content": ["Stakeholders de produto não são apenas pessoas que pedem features — são parceiros com perspectivas únicas sobre o negócio, o mercado e o cliente. O Comercial sabe o que o cliente pergunta antes de comprar. O Suporte sabe onde o produto quebra. O PO que ignora essas perspectivas está tomando decisões com informação incompleta.", "O mapeamento de stakeholders por poder e interesse é o primeiro passo para uma gestão eficaz. Quem tem alto poder e alto interesse precisa de gestão próxima. Quem tem alto poder e baixo interesse precisa ser mantido informado sem sobrecarregar. Quem tem baixo poder mas alto interesse pode ser um aliado valioso.", "A relação com stakeholders é uma conta bancária de confiança: cada entrega bem feita e cada comunicação transparente deposita confiança. Cada surpresa negativa e cada prazo perdido sem contexto saca dessa conta. POs com conta cheia têm muito mais autonomia para tomar decisões ousadas."]}, {"content": ["Dizer 'não' é uma das habilidades mais valiosas de um PO — e também a mais difícil de aprender. O instinto de agradar e o medo de conflito fazem com que muitos POs digam 'sim' para tudo e depois sofram as consequências no backlog. O resultado é um roadmap que reflete pressão, não estratégia.", "A fórmula que funciona não é 'não' — é 'não agora, e aqui está o motivo'. Isso exige ter dados sobre o que está sendo priorizado, clareza sobre o trade-off e respeito pelo pedido do stakeholder mesmo quando você não vai atendê-lo imediatamente.", "POs que dominam essa habilidade desenvolvem relacionamentos mais honestos e produtivos. Em vez de expectativas não gerenciadas e decepções recorrentes, existe um diálogo contínuo sobre prioridade, trade-offs e impacto. Stakeholders que confiam no PO pedem menos e colaboram mais."]}, {"content": ["Transparência com stakeholders não é compartilhar tudo o tempo todo — é garantir que as pessoas certas tenham o contexto certo no momento certo. Um PO que esconde problemas até a última hora cria crises. Um PO que sobrecarrega stakeholders com detalhes cria ruído. O equilíbrio está na comunicação estruturada e proativa.", "O update semanal de produto é uma ferramenta poderosa: uma comunicação breve que responde três perguntas — o que foi entregue, o que está em andamento e o que foi aprendido. Esse ritual simples cria visibilidade sem exigir reuniões extras e demonstra que o time está operando com intencionalidade.", "Quando problemas aparecem — e eles sempre aparecem — a transparência antecipada é o maior diferenciador. Um stakeholder que descobre um atraso pela comunicação proativa do PO reage de forma completamente diferente de um stakeholder que descobre por acidente."]}], "ferramentas": [{"content": ["A guerra entre Jira, Linear e Azure DevOps não tem um vencedor universal — cada ferramenta serve contextos diferentes. O Jira é poderoso e extensível, mas pode virar um labirinto burocrático em times sem disciplina. O Linear é rápido e adorado por startups que valorizam velocidade. O Azure DevOps é natural para ecossistemas Microsoft.", "A escolha da ferramenta de backlog deve partir de uma pergunta simples: o time vai realmente usar isso? Uma ferramenta perfeita que o time resiste é pior do que uma ferramenta mediana adotada completamente. O PO que impõe uma ferramenta sem envolver o time colhe resistência passiva.", "Independente da ferramenta, algumas práticas são universais: backlog único, estados claros, labels consistentes. A ferramenta é o reflexo do processo — e processos ruins ficam mais visíveis, não mais escondidos, quando entram numa ferramenta."]}, {"content": ["Notion e Confluence são as duas plataformas dominantes para documentação de produto. O Confluence é mais estruturado e integrado ao Jira. O Notion é mais flexível e especialmente popular em startups que usam ele como hub central de conhecimento.", "Um PRD eficaz num wiki de produto não é um documento de 20 páginas — é um artefato vivo com contexto suficiente para que qualquer membro do time entenda o problema, a solução proposta e os critérios de sucesso. O formato ideal: problema, hipótese, escopo, critérios de aceite e link para métricas.", "A disciplina de documentação é o que permite que um time escale sem perder conhecimento. Quando qualquer membro do time sai de férias ou o time cresce, a documentação bem mantida reduz o custo de transferência de contexto dramaticamente."]}, {"content": ["Dashboards de métricas não são relatórios para a diretoria — são ferramentas de navegação do produto. Um bom dashboard responde às perguntas que o PO faz toda semana: como está a ativação? A retenção está estável? Alguma métrica saiu do padrão?", "Power BI e Looker são as plataformas mais utilizadas em empresas de médio e grande porte. O Power BI tem forte integração com o ecossistema Microsoft. O Looker é mais analítico e poderoso para times de dados. Para startups, o Metabase ou o próprio Amplitude frequentemente são suficientes.", "O PO que aprende a montar e interpretar dashboards reduz sua dependência do time de dados para perguntas rotineiras e ganha autonomia analítica. Num mercado onde velocidade de aprendizado é vantagem competitiva, essa autonomia é um diferencial real."]}], "templates": [{"content": ["A User Story não é apenas um formato — é uma mudança de perspectiva. 'Como [usuário], quero [ação] para [benefício]' força o PO a sair da visão de sistema e entrar na visão de jornada. Essa mudança parece sutil mas tem um impacto enorme na qualidade das conversas de refinamento.", "Uma user story bem escrita tem três elementos além do enunciado principal: critérios de aceite claros, contexto do problema e, quando relevante, link para dados ou pesquisa que motivou a priorização. Histórias sem esses elementos chegam na planning e voltam para refinamento.", "O anti-padrão mais comum é a user story técnica disfarçada: 'Como desenvolvedor, quero refatorar o serviço X para melhorar performance'. Itens técnicos são legítimos, mas não são user stories — colocá-los nesse formato cria confusão e deve ser evitado."]}, {"content": ["O template de Discovery organiza o pensamento antes de qualquer commitment de desenvolvimento. Ele responde cinco perguntas: qual é o problema (com evidências), qual é a hipótese de solução, qual é o impacto esperado, como vamos validar antes de construir e qual métrica define sucesso.", "A seção de evidências é a mais importante e a mais negligenciada. 'Acreditamos que os usuários têm dificuldade com X' é uma hipótese. 'Dados do suporte mostram 40 tickets por mês sobre X, e entrevistas com 5 usuários confirmaram a dor' é evidência. Essa distinção muda completamente a credibilidade do item.", "Times que adotam o template de discovery como padrão de entrada no backlog notam uma mudança gradual na cultura: menos features por impulso, mais features por evidência. O processo de preencher o template às vezes revela que o item nem deveria existir."]}, {"content": ["O roadmap é a ferramenta de comunicação mais poderosa do PO — e também a mais mal usada. Um roadmap com datas fixas para features específicas cria expectativas que raramente sobrevivem ao contato com a realidade. O modelo Now/Next/Later mostra intenção e direção sem criar compromissos ilusórios.", "Um bom roadmap comunica outcomes, não features. Em vez de 'lançar recurso de exportação', o roadmap diz 'reduzir tempo de relatório do usuário em 50%'. Isso dá ao time liberdade para descobrir a melhor solução e ao stakeholder clareza sobre o problema sendo resolvido.", "O roadmap deve ser revisado pelo menos a cada trimestre. Um roadmap que não muda em seis meses não é estabilidade — é rigidez disfarçada de planejamento. Novas informações de mercado e dados de produto devem ser incorporados de forma transparente."]}, {"content": ["O template de priorização funciona como um espelho da estratégia do produto. Ao listar itens com impacto estimado, esforço aproximado, urgência e risco lado a lado, o PO cria uma visualização que torna o trade-off explícito e muda a conversa com stakeholders.", "A coluna de risco é especialmente valiosa: força o PO a pensar explicitamente sobre o que pode dar errado antes do compromisso. Items com risco alto devem entrar no backlog com um spike ou experimento de validação antes do desenvolvimento completo.", "Compartilhar o template de priorização preenchido com stakeholders transforma a conversa de 'por que X não está no topo?' para 'dado esse trade-off, você ainda quer mudar a prioridade?'. Essa mudança de framing coloca o stakeholder como co-responsável pela decisão."]}, {"content": ["O template de stakeholders é uma ferramenta de gestão de relacionamento. Para cada stakeholder relevante, ele captura: qual é a expectativa sobre o produto, qual é o nível de engajamento atual, quais são os riscos de um relacionamento mal gerenciado e qual é o plano de comunicação.", "A seção de expectativas é onde a maioria dos conflitos com stakeholders se origina. Quando um VP Comercial espera uma feature que está a dois trimestres de ser construída, esse gap deve ser gerenciado proativamente, não descoberto na véspera de uma reunião de C-level.", "Revisar o template de stakeholders mensalmente cria um hábito de gestão ativa de relacionamentos. Em vez de descobrir problemas quando já viraram crise, o PO identifica atritos cedo e pode agir com antecedência."]}, {"content": ["O template de métricas conecta cada objetivo estratégico a um número concreto e a uma frequência de acompanhamento. Para cada meta, ele registra: qual é o KPI, qual é o baseline atual, qual é a meta e em qual prazo, quem é o responsável e qual é o plano de ação se o número não evoluir.", "A frequência de acompanhamento é tão importante quanto a métrica em si. Uma North Star revisada trimestralmente é insuficiente para detectar problemas que precisam de resposta semanal. A cadência certa depende da volatilidade da métrica e da velocidade de resposta que o negócio exige.", "POs que mantêm esse template atualizado e compartilham com o time criam transparência radical sobre o que está funcionando e o que não está. Isso elimina a dinâmica de 'esconder número ruim' e cria uma cultura onde problemas são identificados cedo e resolvidos com mais eficiência."]}], "situacoes": [{"content": ["A cena é clássica: o VP Comercial entra no Slack com 'isso precisa estar pronto para amanhã'. O instinto é dizer 'ok, vou ver o que posso fazer' — mas esse caminho leva a sprint desorganizada e time frustrado. A resposta do PO maduro é diferente: 'entendi a urgência, me conta o contexto para eu avaliar o impacto'.", "Com contexto, o PO pode fazer o trade-off explícito: 'para colocar isso na sprint, precisamos tirar Y ou Z. Qual você prefere sacrificar?'. Essa conversa transforma a pressão unilateral num problema compartilhado — e frequentemente o stakeholder recua quando percebe o custo real.", "O padrão que precisa ser estabelecido desde cedo: urgências reais existem, mas têm custo. Esse custo é sempre visível, sempre comunicado e nunca absorvido silenciosamente pelo time. POs que criam essa cultura de transparência de trade-offs têm menos urgências falsas."]}, {"content": ["Backlog confuso é um sintoma, não a causa. Quando o time reclama que não entende as prioridades, é sinal de que falta clareza estratégica no nível acima: qual é o problema principal que o produto está resolvendo agora? Sem essa âncora, o backlog vira uma lista de pedidos sem coerência.", "A ação imediata não é fazer um refinement de emergência — é ter uma conversa de alinhamento com o time sobre a direção do produto. O que estamos tentando alcançar neste trimestre? Quais são os dois ou três problemas mais importantes que precisamos resolver? Com essa clareza, o backlog se reorganiza naturalmente.", "Backlog confuso frequentemente revela um problema de comunicação: o PO sabe a estratégia mas não compartilhou com o time de forma acessível. Transformar a estratégia em uma narrativa clara — um problema, um objetivo, uma métrica — resolve mais do que qualquer sessão de refinement."]}, {"content": ["Sprint atrasada é uma situação que todo PO vai enfrentar múltiplas vezes — e a resposta diz muito sobre a maturidade do profissional. A primeira reação errada é tentar recuperar o atraso aumentando horas ou prometendo mais do que o time consegue entregar. Isso cria pressão insustentável e qualidade reduzida.", "A resposta correta começa com uma conversa rápida com o time: o que é crítico para o sprint goal? O que é nice-to-have? Frequentemente, o sprint goal pode ser preservado com escopo reduzido — e essa decisão, comunicada claramente para os stakeholders com contexto, é muito melhor do que um 'não conseguimos'.", "Atrasos recorrentes são um sinal de diagnóstico. O PO precisa investigar: o refinement está sendo negligenciado? As estimativas estão cronicamente erradas? O escopo está crescendo no meio da sprint? Cada padrão tem uma causa diferente — e só o diagnóstico correto leva à solução certa."]}, {"content": ["Reclamação de usuário é a versão mais cara de feedback — cara porque chegou tarde e porque já virou insatisfação declarada. O PO que reage a cada reclamação individualmente perde o padrão. O PO que busca os padrões nas reclamações encontra oportunidades de produto.", "A análise correta começa com clustering: quantas reclamações existem por tema? Qual é o segmento de usuário que mais reclama? Existe correlação com um evento recente de produto? Essas perguntas transformam um punhado de queixas num insight de discovery acionável.", "Times de produto maduros tratam feedback negativo como presente — porque é informação gratuita sobre problemas reais. Criar um canal estruturado de leitura de suporte, com revisão semanal pelo PO, é um dos habits de discovery mais baratos e mais valiosos que existem."]}, {"content": ["Quando a diretoria quer resultado rápido, o PO enfrenta um dos dilemas mais comuns em produto. A resposta inteligente é identificar quick wins genuínos: mudanças pequenas com impacto grande e mensurável — não atalhos, mas itens de alta alavancagem que já existem no backlog mas nunca chegam ao topo.", "Quick wins eficientes têm três características: podem ser desenvolvidos em menos de uma sprint, têm impacto diretamente relacionado a uma métrica que importa para a diretoria e têm baixo risco de efeito colateral negativo.", "O PO que sabe identificar e entregar quick wins de forma consistente constrói credibilidade política para defender projetos mais longos e estratégicos. A diretoria que vê resultado rápido tende a dar mais espaço para o time trabalhar com profundidade nos problemas que exigem mais tempo."]}, {"content": ["Conflito entre negócio e tecnologia é inerente ao processo de produto — e sinal de que ambos os lados estão engajados. O problema não é o conflito em si, mas quando ele se torna pessoal, repetitivo ou paralisante. O PO é o mediador natural dessa tensão.", "A abordagem que funciona é criar um espaço de deliberação estruturado: quais são as opções técnicas disponíveis? Qual é o custo de cada uma? Quais são os trade-offs de negócio? Ao tornar o debate explícito e baseado em fatos, o PO transforma uma disputa de ego numa decisão de produto.", "Times que desenvolvem a habilidade de resolver conflitos entre negócio e tecnologia de forma saudável têm uma vantagem enorme: tomam decisões melhores e mais rápidas do que times que evitam o conflito ou que deixam ele se resolver por autoridade hierárquica."]}], "ia": [{"content": ["O ChatGPT transformou o fluxo de trabalho do PO não porque substitui o pensamento — mas porque elimina a fricção entre o pensamento e a produção. Uma user story que levava 20 minutos agora leva 5 com o prompt certo. Um PRD que exigia uma tarde de estruturação pode ser rascunhado em minutos e refinado com o time.", "Os melhores prompts para user stories seguem um padrão: contexto (qual é o produto, quem é o usuário, qual é o problema), instrução (escreva uma user story com critérios de aceite e hipótese de impacto) e restrição (seja específico, evite soluções técnicas, use linguagem do usuário).", "A skill de escrever prompts eficazes está se tornando tão fundamental quanto saber escrever user stories ou conduzir entrevistas. POs que dominam prompting conseguem extrair análises, comparações, riscos e alternativas de qualquer problema em minutos."]}, {"content": ["O Claude tem características que o tornam especialmente útil para análises mais longas e documentos estratégicos. Sua janela de contexto extensa permite processar documentos grandes — uma transcrição de entrevista, um relatório de dados, um documento de estratégia — e gerar sínteses que levariam horas para fazer manualmente.", "Para PRDs longos, análises de discovery e comunicações executivas, o Claude tende a ser mais preciso e menos prolixo que outros modelos. POs que o usam para síntese de pesquisa qualitativa conseguem condensar 10 entrevistas em temas principais com hipóteses de produto em menos de 30 minutos.", "A combinação de IA com julgamento humano é o diferencial. A IA processa volume e estrutura; o PO traz contexto, nuance e responsabilidade pela decisão. POs que entendem o que cada modelo faz melhor constroem um workflow híbrido que os torna significativamente mais produtivos."]}, {"content": ["Perplexity AI combina busca em tempo real com síntese de linguagem natural — o que o torna especialmente útil para benchmark competitivo e pesquisa de mercado rápida. Em vez de abrir dez abas e ler cada artigo, o PO faz uma pergunta e recebe uma síntese com fontes verificadas em segundos.", "Para discovery competitivo, o Perplexity pode reduzir horas de pesquisa para minutos. POs que monitoram concorrentes regularmente usam queries semanais para se manter atualizados sobre lançamentos e movimentos estratégicos sem depender de um time de inteligência competitiva.", "A limitação importante: Perplexity sintetiza o que está publicado, não o que os usuários realmente pensam. Ele é excelente para contexto externo, mas não substitui entrevistas e dados de produto para entendimento interno."]}, {"content": ["O Notion AI transformou a documentação de produto de uma atividade passiva para uma atividade ativa. Com Notion AI integrado, o PO começa a escrever o contexto de um problema e usa a IA para expandir, questionar premissas e sugerir estruturas — o resultado é um documento melhor e um pensamento mais clarificado.", "Para knowledge management de produto, o Notion AI consegue resumir páginas longas, extrair ações de reuniões e criar comparações entre documentos. Em times que usam o Notion como hub central, isso reduz o tempo que novos membros levam para se contextualizar.", "A automação de templates é outra aplicação poderosa: o PO define uma estrutura de PRD ou discovery brief, o Notion AI preenche seções baseado em descrições iniciais. Isso elimina o trabalho de formatar e estruturar, liberando o PO para focar no conteúdo que realmente exige seu julgamento."]}, {"content": ["O Gamma AI transforma texto em apresentações estruturadas em minutos — e para POs que precisam comunicar estratégia, roadmap ou resultados frequentemente, isso é uma mudança de jogo. Em vez de gastar horas no PowerPoint, o PO descreve o contexto e os pontos principais, e o Gamma gera uma estrutura visual coerente.", "A qualidade do output do Gamma é especialmente boa para apresentações de discovery — onde o desafio é transformar dados qualitativos e insights em narrativa persuasiva. O design limpo e a estrutura modular facilitam a iteração.", "Para comunicação com stakeholders e liderança, apresentações bem estruturadas são um diferencial de credibilidade. POs que comunicam bem conseguem mais alinhamento, mais autonomia e mais recursos. O Gamma não substitui a clareza de pensamento, mas remove a barreira de produção."]}, {"content": ["Um prompt eficaz para produto tem quatro elementos: contexto (quem é o produto, quem é o usuário, qual é o problema), papel (aja como um PO sênior), tarefa (o que você quer que a IA produza, com formato especificado) e restrições (o que evitar, qual é o tom). Essa estrutura multiplica a qualidade do output.", "Prompts prontos que funcionam: 'Liste 5 hipóteses de produto para [problema], com evidência necessária para validar cada uma', 'Reescreva essa user story priorizando a perspectiva do usuário e adicionando critérios de aceite', 'Analise esse PRD e identifique riscos de execução e suposições não validadas'.", "A meta não é automatizar o pensamento de produto — é automatizar o trabalho mecânico que não exige julgamento humano. Com as horas liberadas, o PO pode fazer mais discovery, mais conversas com o time e mais análise estratégica. IA bem usada não torna o PO mais raso — torna o PO mais presente onde realmente importa."]}], "carreira": [{"content": ["Os primeiros 90 dias como PO são decisivos — não pela entrega técnica, mas pela criação de relacionamentos. O novo PO que chega querendo mostrar que sabe tudo geralmente cria mais ruído do que valor. O que funciona é a postura oposta: escutar mais do que falar, entender o contexto existente e fazer perguntas que demonstram pensamento estratégico.", "As três prioridades dos primeiros 90 dias: entender o produto profundamente (métricas, usuários, problemas abertos), mapear os stakeholders e suas expectativas, e entregar pelo menos uma coisa pequena mas visível que demonstra capacidade de execução.", "O erro mais comum do PO júnior é tentar mudar tudo ao mesmo tempo. Cada mudança tem um custo político que precisa ser pago com confiança acumulada. POs que entram devagar e entregam consistentemente nos primeiros meses constroem muito mais capital para fazer mudanças maiores depois."]}, {"content": ["A transição de PO júnior para pleno não acontece por tempo de casa — acontece quando o profissional demonstra que consegue conduzir iniciativas de ponta a ponta com autonomia. Isso significa definir o problema sem precisar de direcionamento, priorizar com critérios claros e entregar resultado mensurável consistentemente.", "O PO pleno tem uma característica que distingue claramente do júnior: ele antecipa problemas. Em vez de ser surpreendido por bloqueios, conflitos ou descobertas de discovery, ele os identifica cedo e gerencia proativamente. Essa antecipação é o resultado de experiência combinada com hábitos consistentes.", "Para acelerar essa transição, o caminho mais eficiente é buscar exposição a situações difíceis: conflitos de prioridade complexos, projetos com alta incerteza técnica, stakeholders exigentes. POs que evitam dificuldade ficam competentes em situações simples — é na adversidade que o profissional pleno se desenvolve."]}, {"content": ["O PO sênior opera em uma dimensão diferente: ele não apenas gerencia um backlog — ele influencia a estratégia do produto. Tem opinião fundamentada sobre posicionamento de mercado, sobre onde o produto deve estar em 12 meses e sobre quais apostas valem o risco. Essa visão estratégica é o que diferencia sênior de pleno.", "A componente de liderança é igualmente importante. O PO sênior desenvolve outros POs, compartilha conhecimento proativamente e cria padrões de excelência que elevam o nível do time inteiro. Ele entende que seu impacto não é limitado pelo seu próprio backlog — é multiplicado pela influência que exerce.", "Em termos práticos, a faixa salarial de R$14k a R$20k+ para POs sênior no Brasil reflete exatamente esse valor. POs que chegam a esse nível geralmente têm portfolio documentado de decisões de produto com resultados claros — não apenas lista de features entregadas."]}, {"content": ["IA está criando uma bifurcação acelerada no mercado de produto: POs que dominam as ferramentas e POs que não dominam. A diferença de produtividade entre os dois grupos já é enorme — e vai crescer. POs que usam IA para backlog, discovery e documentação conseguem entregar em uma semana o que antes levava três.", "Para a carreira, dominar IA não é apenas sobre produtividade — é sobre posicionamento. Empresas que já incorporaram IA nos seus processos de produto procuram explicitamente POs com essa competência. Vagas no Airbnb, Stripe e Linear já listam 'proficiência em prompt engineering' como habilidade desejada.", "O caminho mais rápido para desenvolver essa competência não é fazer um curso — é criar o hábito de usar IA em todo projeto de produto por 30 dias. Cada user story, cada PRD, cada análise de discovery: usar IA como parceiro de pensamento e iterar até o output ser tão bom quanto o que você faria sozinho em mais tempo."]}], "certificacoes": [{"content": ["O PSPO I (Professional Scrum Product Owner I) da Scrum.org é o ponto de entrada mais respeitado para quem quer validar conhecimento formal de Product Owner. Diferente de certificações baseadas em presença em treinamento, o PSPO I é um exame de 80 questões que exige entendimento real do Scrum Guide e de sua aplicação prática.", "A preparação mais eficiente combina três fontes: o Scrum Guide oficial (a base de tudo), os Open Assessments da Scrum.org (simulados gratuitos que replicam o formato do exame) e experiência prática aplicando os conceitos. POs que tentam o PSPO I sem experiência prática costumam errar nas questões situacionais.", "O valor do PSPO I para a carreira é real mas relativo: abre portas em processos seletivos que filtram por certificação, demonstra comprometimento com a profissão e cria uma linguagem comum com outros profissionais. Mas é exatamente o que o nome diz: um ponto de partida."]}, {"content": ["O PSPO II é um salto significativo em relação ao nível I — não apenas em dificuldade, mas em natureza. As questões exigem análise de situações complexas, trade-offs de produto e aplicação de princípios em contextos ambíguos. É voltado para POs com pelo menos dois a três anos de experiência.", "A preparação para o PSPO II requer revisitar o Scrum Guide com olhos mais críticos: não 'o que diz o guia' mas 'por que o guia diz isso, e o que acontece quando não seguimos'. Leitura de materiais complementares como Evidence-Based Management ajuda a construir o nível de sofisticação que o exame exige.", "POs que passam no PSPO II geralmente relatam que o processo de preparação foi tão valioso quanto a certificação em si: revisitar fundamentos com profundidade força uma reflexão sobre práticas que muitas vezes se tornaram automáticas."]}, {"content": ["O CSPO (Certified Scrum Product Owner) da Scrum Alliance é a principal alternativa ao caminho da Scrum.org. A diferença fundamental: o CSPO exige participação em um treinamento de dois dias com um Certified Scrum Trainer antes do exame — o que torna o processo mais caro mas também mais imersivo.", "A experiência do treinamento CSPO varia significativamente com o trainer. Os melhores instrutores usam simulações, casos práticos e dinâmicas de grupo que tornam os conceitos muito mais tangíveis do que qualquer leitura. O networking com outros profissionais é um benefício adicional.", "No mercado brasileiro, CSPO e PSPO I têm peso similar em processos seletivos. Para quem está começando, qualquer uma das duas cria uma base sólida. Para progressão de carreira, o que se constrói em cima da certificação é o que realmente define a trajetória."]}, {"content": ["IA para produto está emergindo como um campo de certificação independente — e quem entrar cedo tem vantagem de posicionamento. O Product School, Reforge e plataformas como Coursera estão lançando programas focados em como PMs e POs usam IA generativa no processo de produto.", "Esses programas têm um diferencial importante: eles são muito mais práticos e orientados a ferramentas reais. Em vez de frameworks teóricos, ensinam como usar ChatGPT para síntese de pesquisa, como construir prompts para análise de dados de produto e como avaliar quando uma feature de IA agrega valor real.", "Para a carreira de longo prazo, a combinação de certificação Scrum sólida com expertise em IA de produto é o diferencial mais poderoso disponível no mercado hoje. Scrum garante a fundação de processo; IA amplia a capacidade de execução. POs que dominam os dois operam em um nível que o mercado ainda está aprendendo a remunerar adequadamente."]}], "glossario": [{"content": ["O vocabulário ágil tem raízes no Manifesto Ágil de 2001 e foi formalizado pelo Scrum Guide. Sprint, Planning, Daily, Review, Retrospective, Backlog, User Story, Velocity, WIP, Burndown Chart, Definition of Done — esses termos formam a base da comunicação em times ágeis ao redor do mundo. Dominá-los é o mínimo para ser levado a sério numa conversa de produto.", "Além do vocabulário básico, existe um segundo nível que separa POs operacionais de POs estratégicos: Throughput vs Velocity, Cone of Uncertainty, WSJF (Weighted Shortest Job First), T-shirt sizing. Esses termos aparecem em contextos mais sofisticados e demonstram maturidade de processo.", "O perigo do jargão ágil é usá-lo sem entender o princípio por trás. 'Fazer Daily' sem entender que o objetivo é sincronização e identificação de impedimentos é ritual sem propósito. O vocabulário só tem valor quando está ancorado na compreensão do porquê."]}, {"content": ["Dados e métricas têm seu próprio vocabulário que todo PO precisa dominar. DAU, WAU, MAU — e a diferença entre eles que revela a natureza do engajamento. Retention Curve, Cohort Analysis, Funnel Analysis, A/B Testing, Statistical Significance — cada um responde perguntas diferentes sobre o comportamento do usuário.", "Métricas financeiras de produto são igualmente essenciais: ARR, MRR, CAC, LTV, a relação LTV/CAC que define sustentabilidade do modelo de negócio, Payback Period e Churn Rate. POs que falam essas línguas conseguem conversas muito mais produtivas com o CFO e o board.", "O vocabulário de growth completa o quadro: AARRR (Acquisition, Activation, Retention, Referral, Revenue), North Star Metric, Input Metrics vs Output Metrics, Leading Indicators vs Lagging Indicators. Entender as diferenças permite ao PO agir de forma antecipada em vez de apenas reativa."]}, {"content": ["O vocabulário financeiro é onde muitos POs têm o maior gap — e onde ganhar proficiência cria o maior salto de credibilidade com liderança. ROI, NPV, Break-even Point, Gross Margin, EBITDA, Burn Rate, Runway — esses termos aparecem em conversas de C-level que afetam diretamente as prioridades de produto.", "Para produto digital especificamente, dois conceitos financeiros são críticos: Unit Economics (a economia por unidade vendida ou por usuário ativo) e o modelo de precificação (como cada decisão de produto afeta a disposição a pagar do cliente). POs que entendem unit economics conseguem defender investimentos com argumentos financeiros.", "Runway — quanto tempo de operação a empresa tem com o caixa atual — é talvez o número mais importante de startups early-stage. Ele define o senso de urgência do roadmap, a tolerância a risco de novas apostas e a velocidade necessária de discovery. POs de startups que não monitoram runway estão voando sem altímetro."]}, {"content": ["Growth e marketing têm um vocabulário extenso que o PO precisa entender para colaborar efetivamente. Organic vs Paid Acquisition, CAC por canal, Viral Coefficient, NPS (Net Promoter Score), CSAT, CES — cada um captura uma dimensão diferente da saúde do produto e do relacionamento com o cliente.", "O conceito de Growth Loop é especialmente útil: em vez de pensar em funil linear, loops descrevem ciclos onde o engajamento de usuários existentes gera nova aquisição. O loop viral do Dropbox, o loop de conteúdo do LinkedIn — identificar o loop core do seu produto orienta prioridades de produto muito mais eficientemente.", "SEO, CPC, CPM, CTR, CRO (Conversion Rate Optimization) — esses termos de performance marketing afetam diretamente decisões de produto como onboarding e trial experience. POs que entendem como os usuários chegam ao produto conseguem projetar experiências de ativação muito mais eficientes."]}, {"content": ["O vocabulário técnico é onde a maioria dos POs tem o maior medo — e onde dominar o básico cria o maior diferencial de colaboração com engenharia. API, REST vs GraphQL, Microservices vs Monolith, Tech Debt, Refactoring, CI/CD, Feature Flags — não é necessário saber implementar, mas é essencial saber o que significam e quando importam.", "SLI, SLO, SLA e MTTR são o vocabulário de confiabilidade que todo PO de produto com componentes críticos precisa dominar. Quando o sistema cai, o PO que sabe o que são esses termos consegue participar da conversa de prioridade de infraestrutura com autoridade.", "Segurança e privacidade têm vocabulário crescente em relevância: LGPD/GDPR, PII (Personally Identifiable Information), OAuth, End-to-End Encryption. Com regulamentações se tornando mais rígidas globalmente, POs que entendem as implicações evitam decisões que criam passivos legais."]}],"primeiros_passos":[{"content": ["Entrar no mercado de produto pode parecer intimidador: siglas por todo lado, frameworks com nomes em inglês, squads que falam uma língua própria e uma pressão implícita de já chegar entregando. A boa notícia é que ninguém espera que você saiba tudo no primeiro dia — e os melhores PMs do mercado foram iniciantes que aprenderam a aprender rápido. O mapa do território começa por entender três coisas: o que é produto, quem são os seus parceiros e qual é o ritmo do seu time.", "O ecossistema de produto gira em torno de um triângulo: negócio, usuário e tecnologia. Seu papel como PO ou PM é ser o elo entre os três — não o dono das respostas, mas o responsável pelas perguntas certas. Nos primeiros dias, invista tempo mapeando: quem são os stakeholders, como funciona o processo de discovery, qual é o modelo de negócio da empresa e quais métricas o time usa para definir sucesso. Esse mapeamento vai evitar que você tome decisões no escuro.", "Antes de qualquer coisa, sente com o time, observe cerimônias, leia documentos antigos e converse com usuários reais. Os primeiros 30 dias são de escuta ativa — não de proposta. Todo PM iniciante que entrou tentando mudar tudo no primeiro mês saiu sem aliados. Todo PM que entrou ouvindo e entregando pequenas vitórias rápidas construiu credibilidade para mudar o que precisava."]}, {"content": ["Os primeiros 90 dias em produto são uma janela de ouro: você ainda tem o olhar de fora, faz perguntas que veteranos não fazem mais e pode absorver contexto em velocidade acelerada. A armadilha é desperdiçar esse tempo em cursos demais e prática de menos. O que funciona é um aprendizado em espiral: fundamentos teóricos aplicados imediatamente ao trabalho real, revisados e aprofundados a cada ciclo.", "No primeiro mês, foque nos fundamentos: entenda o que é backlog, como funciona uma sprint, o que são user stories e qual é a diferença entre output e outcome. Não precisa dominar tudo — precisa ter vocabulário suficiente para participar das conversas do time. Livros como 'Inspired' do Marty Cagan e 'Continuous Discovery Habits' da Teresa Torres cobrem 80% do que você vai precisar nos primeiros meses.", "No segundo e terceiro mês, aplique. Proponha conduzir uma entrevista com usuário, ajude a refinar um item do backlog, ofereça-se para escrever uma user story. Aprenda fazendo e com feedback real. Documente seus aprendizados semanalmente — essa prática de reflexão estruturada acelera o crescimento mais do que qualquer curso online."]}, {"content": ["O comportamento nos primeiros meses de um novo time pode definir sua trajetória por anos. PMs que chegam com pressa de mostrar resultado tendem a criar ruído antes de criar valor. PMs que chegam com curiosidade genuína, dispostos a aprender o contexto antes de propor mudanças, constroem alianças que duram. A postura certa não é de subordinação — é de humildade estratégica.", "Escutar mais do que falar não significa ficar quieto. Significa fazer perguntas que mostram que você está processando: 'Por que vocês chegaram a essa decisão?', 'O que já foi tentado antes?', 'Como vocês mediram o sucesso disso?'. Essas perguntas sinalizam maturidade e criam abertura para contribuições futuras. Evite o erro de chegar com 'na minha empresa anterior fazíamos assim' — cada contexto é único.", "Construir relacionamentos com engenheiros, designers e analistas é tão importante quanto entender o produto. O PM que o time quer defender é aquele que os ouviu, removeu obstáculos e não os sobrecarregou com demandas sem contexto. Invista tempo em conversas informais, pergunte sobre dores do processo e mostre que você está ali para facilitar — não para mandar."]}, {"content": ["Todo PM iniciante tem um kit padrão de erros. O bom é que são previsíveis — e portanto evitáveis. O mais comum é confundir features com valor: sair entregando funcionalidades sem validar se elas resolvem um problema real. O segundo mais comum é aceitar tudo que o stakeholder pede sem questionar o problema por trás do pedido. O terceiro é tentar agradar a todos e acabar com um backlog sem prioridade.", "Outro erro clássico é pular direto para a solução. Um usuário diz 'quero um botão aqui' e o PM iniciante vai especificar o botão. O PM experiente pergunta: 'Por que você precisa disso? O que você está tentando fazer?' — e muitas vezes descobre que o problema real é completamente diferente. Treine o hábito de questionar o pedido antes de aceitar a solução embutida nele.", "Por último: não tenha medo de dizer que não sabe. Fingir conhecimento num ambiente técnico e colaborativo é uma dívida que cobra juros altos. Dizer 'não sei, mas vou descobrir' demonstra honestidade e compromisso. Os melhores PMs que conheço ainda dizem isso depois de anos de carreira — porque produto é uma área onde o aprendizado nunca termina."]}, {"content": ["Ser júnior não significa ser invisível. Significa ter uma estratégia diferente para ganhar visibilidade: ao invés de volume de opinião, aposte em qualidade de execução e clareza de comunicação. Entregue o que prometeu, no prazo, com contexto suficiente para quem recebe entender o impacto. Isso constrói reputação mais rápido do que qualquer apresentação brilhante.", "Uma técnica poderosa para quem está começando é documentar e comunicar aprendizados. Após cada entrevista com usuário, escreva um resumo claro. Após cada sprint, registre o que funcionou e o que não funcionou. Compartilhe esses insights com o time de forma objetiva — sem jargão desnecessário, com conclusões claras. Quem organiza e comunica bem o conhecimento se torna referência naturalmente.", "Voluntarie-se para tarefas que outros evitam: mapear um fluxo confuso, organizar uma documentação desatualizada, conduzir uma reunião difícil. Essas contribuições criam visibilidade genuína e mostram que você está disposto a trabalhar pelo time, não apenas pela sua própria agenda. Liderança em produto começa muito antes do título — começa no primeiro dia."]}, {"content": ["O primeiro ciclo completo de produto é uma experiência formadora. Da identificação do problema à entrega e medição do resultado, você vai errar em alguma etapa — e tudo bem. O objetivo não é acertar tudo na primeira vez. É aprender o suficiente para acertar mais na segunda.", "Comece com escopo pequeno e bem definido. Um problema real de um grupo específico de usuários, uma hipótese clara de solução, uma métrica de sucesso mensurável. Resista à tentação de resolver tudo de uma vez. O PM que entrega uma coisa bem feita vale mais do que o que propõe dez coisas e não conclui nenhuma.", "Ao final do ciclo, faça uma retrospectiva honesta: o que você aprendeu sobre o usuário? Sobre o processo? Sobre si mesmo? Escreva isso. Esse documento vai ser mais valioso do que qualquer certificação — porque é aprendizado real, no seu contexto, com as suas variáveis. É com ele que você vai crescer de iniciante a referência."]}]}
+
+
+// ── READER STATE ──────────────────────────────────────────────────────────
+let _arSection = null;
+let _arIdx = 0;
+
+function openArticleReader(sectionKey, articleIdx, event) {
+  if (event) event.stopPropagation();
+  if (!ARTICLES[sectionKey]) return;
+  _arSection = sectionKey;
+  _arIdx = articleIdx;
+  _renderArticle();
+  document.getElementById('article-reader').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('article-reader').scrollTop = 0;
+}
+
+function closeArticleReader() {
+  document.getElementById('article-reader').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function navigateArticle(dir) {
+  const arts = ARTICLES[_arSection];
+  if (!arts) return;
+  const next = _arIdx + dir;
+  if (next >= 0 && next < arts.length) { _arIdx = next; _renderArticle(); }
+  document.getElementById('article-reader').scrollTop = 0;
+}
+
+function _renderArticle() {
+  const arts = ARTICLES[_arSection];
+  const art = arts[_arIdx];
+  const sec = data[_arSection];
+  if (!art || !sec) return;
+
+  document.getElementById('ar-section-tag').textContent = sec.icon + ' ' + sec.title;
+  const epTitle = sec.episodes[_arIdx] ? sec.episodes[_arIdx].title : 'Artigo ' + (_arIdx + 1);
+  document.getElementById('ar-title').textContent = epTitle;
+  const rt = sec.episodes[_arIdx] ? sec.episodes[_arIdx].duration : '10 min';
+  document.getElementById('ar-readtime').textContent = '⏱ ' + rt + ' de leitura';
+  document.getElementById('ar-body').innerHTML = art.content.map(p => '<p>' + p + '</p>').join('');
+  document.getElementById('ar-counter').textContent = (_arIdx + 1) + ' de ' + arts.length;
+  document.getElementById('ar-prev').disabled = (_arIdx === 0);
+  document.getElementById('ar-next').disabled = (_arIdx === arts.length - 1);
+}
+
+// Override ESC to close reader first
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const reader = document.getElementById('article-reader');
+    if (reader && reader.classList.contains('open')) closeArticleReader();
+    else closeModal();
+  }
+}, true);
+
+
+// ─── CTA FUNCTIONS ──────────────────────────────────────────────────────────
+var wishlist = new Set();
+var currentModalSection = null;
+
+// Wrap openModal to track current section
+var _origOpenModal = openModal;
+openModal = function(id) {
+  currentModalSection = id;
+  _origOpenModal(id);
+  setTimeout(function() {
+    var btn = document.getElementById('modal-read-btn');
+    if (btn) btn.onclick = function() { openArticleReader(id, 0, null); };
+    var wBtn = document.getElementById('modal-wishlist-btn');
+    if (wBtn) {
+      if (wishlist.has(id)) {
+        wBtn.textContent = '\u2713 Na Minha Lista';
+        wBtn.style.background = 'rgba(70,211,105,0.2)';
+        wBtn.style.color = '#46d369';
+      } else {
+        wBtn.textContent = '+ Minha Lista';
+        wBtn.style.background = 'rgba(109,109,110,0.5)';
+        wBtn.style.color = '';
+      }
+    }
+  }, 60);
+};
+
+function openFirstArticle() {
+  if (!currentModalSection) return;
+  var sec = currentModalSection;
+  closeModal();
+  setTimeout(function() { openArticleReader(sec, 0, null); }, 200);
+}
+
+function toggleModalWishlist() {
+  if (!currentModalSection) return;
+  toggleWishlistById(currentModalSection);
+  var btn = document.getElementById('modal-wishlist-btn');
+  if (!btn) return;
+  if (wishlist.has(currentModalSection)) {
+    btn.textContent = '\u2713 Na Minha Lista';
+    btn.style.background = 'rgba(70,211,105,0.2)';
+    btn.style.color = '#46d369';
+  } else {
+    btn.textContent = '+ Minha Lista';
+    btn.style.background = 'rgba(109,109,110,0.5)';
+    btn.style.color = '';
+  }
+}
+
+function toggleWishlist(btn, sectionKey) {
+  toggleWishlistById(sectionKey);
+  if (wishlist.has(sectionKey)) {
+    btn.textContent = '\u2713';
+    btn.style.background = 'rgba(70,211,105,0.25)';
+    btn.style.borderColor = '#46d369';
+    showToast('Adicionado \u00e0 sua lista!');
+  } else {
+    btn.textContent = '+';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    showToast('Removido da lista.');
+  }
+}
+
+function toggleWishlistById(key) {
+  if (wishlist.has(key)) wishlist.delete(key);
+  else wishlist.add(key);
+}
+
+function markUseful(btn, sectionKey) {
+  btn.style.background = 'rgba(229,9,20,0.25)';
+  btn.style.borderColor = 'var(--red)';
+  var title = (data[sectionKey] ? data[sectionKey].title : sectionKey);
+  showToast('\u0027' + title + '\u0027 marcado como \u00fatil!');
+}
+
+var _toastTimer = null;
+function showToast(msg) {
+  var toast = document.getElementById('pf-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'pf-toast';
+    toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:12px 28px;border-radius:6px;font-size:0.9rem;z-index:9999;opacity:0;transition:opacity 0.25s,transform 0.25s;pointer-events:none;border:1px solid rgba(255,255,255,0.12);white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3000);
+}
+
+
+// ─── PARALLAX HERO ──────────────────────────────────────────────────────────
+(function() {
+  var heroBg = document.getElementById('hero-bg');
+  if (!heroBg) return;
+  var ticking = false;
+  function onScroll() {
+    if (!ticking) {
+      requestAnimationFrame(function() {
+        var scrollY = window.scrollY || window.pageYOffset;
+        var heroH = heroBg.parentElement.offsetHeight;
+        // Move a imagem mais devagar que o scroll (fator 0.45 = parallax suave)
+        var offset = scrollY * 0.45;
+        heroBg.style.transform = 'translateY(' + offset + 'px)';
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+  // Desativa em mobile (performance)
+  var mq = window.matchMedia('(max-width: 768px)');
+  function setup() {
+    if (mq.matches) {
+      window.removeEventListener('scroll', onScroll);
+      heroBg.style.transform = '';
+    } else {
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
+  }
+  mq.addEventListener ? mq.addEventListener('change', setup) : mq.addListener(setup);
+  setup();
+})();
+
+</script>
+
+<!-- ─── ARTICLE READER ─── -->
+<div class="article-reader" id="article-reader">
+  <div class="article-reader-inner">
+    <button class="ar-back" onclick="closeArticleReader()">&#8592; Voltar para o módulo</button>
+    <div class="ar-section-tag" id="ar-section-tag"></div>
+    <h1 class="ar-title" id="ar-title"></h1>
+    <div class="ar-meta">
+      <span class="rt" id="ar-readtime"></span>
+      <span class="badge">Artigo</span>
+    </div>
+    <div class="ar-body" id="ar-body"></div>
+    <div class="ar-nav">
+      <button class="ar-nav-btn" id="ar-prev" onclick="navigateArticle(-1)">&#8592; Anterior</button>
+      <span class="ar-nav-counter" id="ar-counter"></span>
+      <button class="ar-nav-btn" id="ar-next" onclick="navigateArticle(1)">Próximo &#8594;</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
